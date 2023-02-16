@@ -212,11 +212,10 @@ func (a *Arena) TraceLine(x0, y0, x1, y1 int, test func(c *Cell) bool) *Cell {
 
 func (a *Arena) Reset() {
 	for i := 0; i < len(a.Cells); i++ {
-		cell := &a.Cells[i]
-		cell.Moves = 0
-		cell.Shots = 0
-		cell.Kills = 0
-		cell.Waits = 0
+		a.Cells[i].Moves = 0
+		a.Cells[i].Shots = 0
+		a.Cells[i].Kills = 0
+		a.Cells[i].Waits = 0
 	}
 }
 

@@ -7,8 +7,8 @@ import (
 )
 
 func TestScript1(t *testing.T) {
-	script := "(+ 1 32)"
-	node, remaining, err := readToken(script)
+	code := "(+ 1 32)"
+	node, remaining, err := readToken(code)
 
 	assert.Empty(t, remaining)
 	assert.NoError(t, err)
@@ -30,8 +30,8 @@ func TestScript1(t *testing.T) {
 }
 
 func TestScript2(t *testing.T) {
-	script := "(+ 1 (foo 22))"
-	node, remaining, err := readToken(script)
+	code := "(+ 1 (foo 22))"
+	node, remaining, err := readToken(code)
 
 	assert.Empty(t, remaining)
 	assert.NoError(t, err)
@@ -60,193 +60,201 @@ func TestScript2(t *testing.T) {
 }
 
 func TestScriptUnterminatedError(t *testing.T) {
-	script := "(+ 1 2"
-	node, _, err := readToken(script)
+	code := "(+ 1 2"
+	node, _, err := readToken(code)
 
 	assert.Nil(t, node)
 	assert.ErrorContains(t, err, "Unterminated expression")
 }
 
 func TestScriptIntInFunctionPosition(t *testing.T) {
-	script := "(1 + 2)"
-	node, _, err := readToken(script)
+	code := "(1 + 2)"
+	node, _, err := readToken(code)
 
 	assert.Nil(t, node)
 	assert.ErrorContains(t, err, "Non-symbol in function position")
 }
 
 func TestScriptExprInFunctionPosition(t *testing.T) {
-	script := "((+ 1 2) 3)"
-	node, _, err := readToken(script)
+	code := "((+ 1 2) 3)"
+	node, _, err := readToken(code)
 
 	assert.Nil(t, node)
 	assert.ErrorContains(t, err, "Non-symbol in function position")
 }
 
 func TestScriptEmptyList(t *testing.T) {
-	script := "(+ 1 ())"
-	node, _, err := readToken(script)
+	code := "(+ 1 ())"
+	node, _, err := readToken(code)
 
 	assert.Nil(t, node)
 	assert.ErrorContains(t, err, "Found an empty list")
 }
 
 func TestScriptSymbolInArgumentPosition(t *testing.T) {
-	script := "(+ foo 2)"
-	node, _, err := readToken(script)
+	code := "(+ foo 2)"
+	node, _, err := readToken(code)
 
 	assert.Nil(t, node)
 	assert.ErrorContains(t, err, "Symbol 'foo' passed as function argument")
 }
 
 func TestAddNumbers(t *testing.T) {
-	script := "(+ 13 2)"
-	node, _, err := readToken(script)
+	code := "(+ 13 2)"
+	node, _, err := readToken(code)
 	assert.NoError(t, err)
 
-	result := node.Eval()
+	script := Script{nil, nil}
+	result := script.Eval(node)
 	assert.Equal(t, ResultInt, result.Type)
 	assert.Equal(t, 15, result.Int)
 }
 
 func TestIf(t *testing.T) {
-	script := "(if 4 1 2)"
-	node, _, err := readToken(script)
+	code := "(if 4 1 2)"
+	node, _, err := readToken(code)
 	assert.NoError(t, err)
 
-	result := node.Eval()
+	script := Script{nil, nil}
+	result := script.Eval(node)
 	assert.Equal(t, ResultInt, result.Type)
 	assert.Equal(t, 1, result.Int)
 
-	script = "(if 0 1 2)"
-	node, _, err = readToken(script)
+	code = "(if 0 1 2)"
+	node, _, err = readToken(code)
 	assert.NoError(t, err)
 
-	result = node.Eval()
+	result = script.Eval(node)
 	assert.Equal(t, ResultInt, result.Type)
 	assert.Equal(t, 2, result.Int)
 }
 
 func TestLessThan(t *testing.T) {
-	script := "(< 1 2)"
-	node, _, err := readToken(script)
+	code := "(< 1 2)"
+	node, _, err := readToken(code)
 	assert.NoError(t, err)
 
-	result := node.Eval()
+	script := Script{nil, nil}
+	result := script.Eval(node)
 	assert.Equal(t, ResultInt, result.Type)
 	assert.Equal(t, 1, result.Int)
 
-	script = "(< 2 1)"
-	node, _, err = readToken(script)
+	code = "(< 2 1)"
+	node, _, err = readToken(code)
 	assert.NoError(t, err)
 
-	result = node.Eval()
+	result = script.Eval(node)
 	assert.Equal(t, ResultInt, result.Type)
 	assert.Equal(t, 0, result.Int)
 }
 
 func TestGreaterThan(t *testing.T) {
-	script := "(> 1 2)"
-	node, _, err := readToken(script)
+	code := "(> 1 2)"
+	node, _, err := readToken(code)
 	assert.NoError(t, err)
 
-	result := node.Eval()
+	script := Script{nil, nil}
+	result := script.Eval(node)
 	assert.Equal(t, ResultInt, result.Type)
 	assert.Equal(t, 0, result.Int)
 
-	script = "(> 2 1)"
-	node, _, err = readToken(script)
+	code = "(> 2 1)"
+	node, _, err = readToken(code)
 	assert.NoError(t, err)
 
-	result = node.Eval()
+	result = script.Eval(node)
 	assert.Equal(t, ResultInt, result.Type)
 	assert.Equal(t, 1, result.Int)
 }
 
 func TestEqual(t *testing.T) {
-	script := "(= 1 2)"
-	node, _, err := readToken(script)
+	code := "(= 1 2)"
+	node, _, err := readToken(code)
 	assert.NoError(t, err)
 
-	result := node.Eval()
+	script := Script{nil, nil}
+	result := script.Eval(node)
 	assert.Equal(t, ResultInt, result.Type)
 	assert.Equal(t, 0, result.Int)
 
-	script = "(= 2 2)"
-	node, _, err = readToken(script)
+	code = "(= 2 2)"
+	node, _, err = readToken(code)
 	assert.NoError(t, err)
 
-	result = node.Eval()
+	result = script.Eval(node)
 	assert.Equal(t, ResultInt, result.Type)
 	assert.Equal(t, 1, result.Int)
 }
 
 func TestAnd(t *testing.T) {
-	script := "(and 1 2)"
-	node, _, err := readToken(script)
+	code := "(and 1 2)"
+	node, _, err := readToken(code)
 	assert.NoError(t, err)
 
-	result := node.Eval()
+	script := Script{nil, nil}
+	result := script.Eval(node)
 	assert.Equal(t, ResultInt, result.Type)
 	assert.Equal(t, 2, result.Int)
 
-	script = "(and 0 2)"
-	node, _, err = readToken(script)
+	code = "(and 0 2)"
+	node, _, err = readToken(code)
 	assert.NoError(t, err)
 
-	result = node.Eval()
+	result = script.Eval(node)
 	assert.Equal(t, ResultInt, result.Type)
 	assert.Equal(t, 0, result.Int)
 
-	script = "(and 2 0)"
-	node, _, err = readToken(script)
+	code = "(and 2 0)"
+	node, _, err = readToken(code)
 	assert.NoError(t, err)
 
-	result = node.Eval()
+	result = script.Eval(node)
 	assert.Equal(t, ResultInt, result.Type)
 	assert.Equal(t, 0, result.Int)
 }
 
 func TestOr(t *testing.T) {
-	script := "(or 0 0)"
-	node, _, err := readToken(script)
+	code := "(or 0 0)"
+	node, _, err := readToken(code)
 	assert.NoError(t, err)
 
-	result := node.Eval()
+	script := Script{nil, nil}
+	result := script.Eval(node)
 	assert.Equal(t, ResultInt, result.Type)
 	assert.Equal(t, 0, result.Int)
 
-	script = "(or 0 2)"
-	node, _, err = readToken(script)
+	code = "(or 0 2)"
+	node, _, err = readToken(code)
 	assert.NoError(t, err)
 
-	result = node.Eval()
+	result = script.Eval(node)
 	assert.Equal(t, ResultInt, result.Type)
 	assert.Equal(t, 2, result.Int)
 
-	script = "(or 2 0)"
-	node, _, err = readToken(script)
+	code = "(or 2 0)"
+	node, _, err = readToken(code)
 	assert.NoError(t, err)
 
-	result = node.Eval()
+	result = script.Eval(node)
 	assert.Equal(t, ResultInt, result.Type)
 	assert.Equal(t, 2, result.Int)
 }
 
 func TestNot(t *testing.T) {
-	script := "(not 0)"
-	node, _, err := readToken(script)
+	code := "(not 0)"
+	node, _, err := readToken(code)
 	assert.NoError(t, err)
 
-	result := node.Eval()
+	script := Script{nil, nil}
+	result := script.Eval(node)
 	assert.Equal(t, ResultInt, result.Type)
 	assert.Equal(t, 1, result.Int)
 
-	script = "(not 33)"
-	node, _, err = readToken(script)
+	code = "(not 33)"
+	node, _, err = readToken(code)
 	assert.NoError(t, err)
 
-	result = node.Eval()
+	result = script.Eval(node)
 	assert.Equal(t, ResultInt, result.Type)
 	assert.Equal(t, 0, result.Int)
 }

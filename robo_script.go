@@ -25,7 +25,7 @@ type Result struct {
 var ResultTrue = Result{Type: ResultInt, Int: 1}
 var ResultFalse = Result{Type: ResultInt, Int: 0}
 
-type Function func(args []*ScriptNode) Result
+type Function func(s *Script, args []*ScriptNode) Result
 
 type NodeType uint8
 const (
@@ -48,7 +48,7 @@ type Script struct {
 
 // If the script returns a number instead of performing an action, just wait.
 func (s *Script) Run() Result {
-	result := s.Code.Eval()
+	result := s.Eval(s.Code)
 	if result.Type != ResultAction {
 		result.Type = ResultAction
 		result.Action = Action{Type: ActionWait}
@@ -68,7 +68,6 @@ func ParseScript(code string) *ScriptNode {
 func readToken(code string) (*ScriptNode, string, error) {
 	var err error
 	code = strings.TrimSpace(code)
-	// logger.Printf("ParseScript: '%s'", code)
 	node := ScriptNode{ Children: make([]*ScriptNode, 0) }
 
 	if code[0] == '(' {
@@ -85,8 +84,6 @@ func readToken(code string) (*ScriptNode, string, error) {
 				return nil, code, fmt.Errorf("Unterminated expression!")
 			}
 			node.Children = append(node.Children, child)
-			// logger.Printf("Child: %v, code '%s'", child, code)
-			// logger.Printf("Appended %d node to parent expression (pos %d)", child.Type, len(node.Children))
 		}
 		if len(node.Children) == 0 {
 			return nil, code, fmt.Errorf("Found an empty list!")
@@ -114,7 +111,6 @@ func readToken(code string) (*ScriptNode, string, error) {
 		if err != nil {
 			return nil, code, fmt.Errorf("Couldn't convert int string to int: '%s', %v", s, err)
 		}
-		// logger.Printf("Returning int %d, code '%s'", node.N, code)
 		return &node, code[len(s):], nil
 
 	} else if !unicode.IsSpace(rune(code[0])) {
@@ -124,14 +120,13 @@ func readToken(code string) (*ScriptNode, string, error) {
 		}
 		node.Type = Symbol
 		node.Sym = s
-		// logger.Printf("Returning sym '%s', code '%s'", node.Sym, code)
 		return &node, code[len(s):], nil
 	}
 
 	return &node, code, nil
 }
 
-func (node *ScriptNode) Eval() Result {
+func (s *Script) Eval(node *ScriptNode) Result {
 	switch node.Type {
 	case Int:
 		return Result{Type: ResultInt, Int: node.N}
@@ -141,7 +136,7 @@ func (node *ScriptNode) Eval() Result {
 		if err != nil {
 			return Result{Type: ResultError, Err: err}
 		}
-		return function(node.Children[1:])
+		return function(s, node.Children[1:])
 	case Symbol:
 		logger.Fatalf("Tried to evaluate a symbol! '%s'", node.Sym)
 	}
@@ -170,7 +165,7 @@ func InitScript() {
 	functionLookupTable["not"] = RS_Not
 
 	// Actions
-	// functionLookupTable["go-north"] = RS_GoNorth
+	functionLookupTable["go-north"] = RS_GoNorth
 }
 
 func ResolveFunction(name string) (Function, error) {
@@ -183,13 +178,13 @@ func ResolveFunction(name string) (Function, error) {
 
 // "Functions" is a poor choice of words, since the functions are responsible for evaluating their own arguments. It's
 // more like a language that has only special forms.
-func RS_Add(args []*ScriptNode) Result {
+func RS_Add(s *Script, args []*ScriptNode) Result {
 	assertArity("+", 2, args)
-	result1 := args[0].Eval()
+	result1 := s.Eval(args[0])
 	if result1.Type != ResultInt {
 		return result1
 	}
-	result2 := args[1].Eval()
+	result2 := s.Eval(args[1])
 	if result2.Type != ResultInt {
 		return result2
 	}
@@ -197,13 +192,13 @@ func RS_Add(args []*ScriptNode) Result {
 	return result1
 }
 
-func RS_Subtract(args []*ScriptNode) Result {
+func RS_Subtract(s *Script, args []*ScriptNode) Result {
 	assertArity("-", 2, args)
-	result1 := args[0].Eval()
+	result1 := s.Eval(args[0])
 	if result1.Type != ResultInt {
 		return result1
 	}
-	result2 := args[1].Eval()
+	result2 := s.Eval(args[1])
 	if result2.Type != ResultInt {
 		return result2
 	}
@@ -211,13 +206,13 @@ func RS_Subtract(args []*ScriptNode) Result {
 	return result1
 }
 
-func RS_Multiply(args []*ScriptNode) Result {
+func RS_Multiply(s *Script, args []*ScriptNode) Result {
 	assertArity("*", 2, args)
-	result1 := args[0].Eval()
+	result1 := s.Eval(args[0])
 	if result1.Type != ResultInt {
 		return result1
 	}
-	result2 := args[1].Eval()
+	result2 := s.Eval(args[1])
 	if result2.Type != ResultInt {
 		return result2
 	}
@@ -225,13 +220,13 @@ func RS_Multiply(args []*ScriptNode) Result {
 	return result1
 }
 
-func RS_Divide(args []*ScriptNode) Result {
+func RS_Divide(s *Script, args []*ScriptNode) Result {
 	assertArity("/", 2, args)
-	result1 := args[0].Eval()
+	result1 := s.Eval(args[0])
 	if result1.Type != ResultInt {
 		return result1
 	}
-	result2 := args[1].Eval()
+	result2 := s.Eval(args[1])
 	if result2.Type != ResultInt {
 		return result2
 	}
@@ -239,13 +234,13 @@ func RS_Divide(args []*ScriptNode) Result {
 	return result1
 }
 
-func RS_Modulus(args []*ScriptNode) Result {
+func RS_Modulus(s *Script, args []*ScriptNode) Result {
 	assertArity("mod", 2, args)
-	result1 := args[0].Eval()
+	result1 := s.Eval(args[0])
 	if result1.Type != ResultInt {
 		return result1
 	}
-	result2 := args[1].Eval()
+	result2 := s.Eval(args[1])
 	if result2.Type != ResultInt {
 		return result2
 	}
@@ -253,13 +248,13 @@ func RS_Modulus(args []*ScriptNode) Result {
 	return result1
 }
 
-func RS_LessThan(args []*ScriptNode) Result {
+func RS_LessThan(s *Script, args []*ScriptNode) Result {
 	assertArity("<", 2, args)
-	result1 := args[0].Eval()
+	result1 := s.Eval(args[0])
 	if result1.Type != ResultInt {
 		return result1
 	}
-	result2 := args[1].Eval()
+	result2 := s.Eval(args[1])
 	if result2.Type != ResultInt {
 		return result2
 	}
@@ -271,13 +266,13 @@ func RS_LessThan(args []*ScriptNode) Result {
 	}
 }
 
-func RS_GreaterThan(args []*ScriptNode) Result {
+func RS_GreaterThan(s *Script, args []*ScriptNode) Result {
 	assertArity(">", 2, args)
-	result1 := args[0].Eval()
+	result1 := s.Eval(args[0])
 	if result1.Type != ResultInt {
 		return result1
 	}
-	result2 := args[1].Eval()
+	result2 := s.Eval(args[1])
 	if result2.Type != ResultInt {
 		return result2
 	}
@@ -289,13 +284,13 @@ func RS_GreaterThan(args []*ScriptNode) Result {
 	}
 }
 
-func RS_Equal(args []*ScriptNode) Result {
+func RS_Equal(s *Script, args []*ScriptNode) Result {
 	assertArity("=", 2, args)
-	result1 := args[0].Eval()
+	result1 := s.Eval(args[0])
 	if result1.Type != ResultInt {
 		return result1
 	}
-	result2 := args[1].Eval()
+	result2 := s.Eval(args[1])
 	if result2.Type != ResultInt {
 		return result2
 	}
@@ -307,26 +302,26 @@ func RS_Equal(args []*ScriptNode) Result {
 	}
 }
 
-func RS_If(args []*ScriptNode) Result {
+func RS_If(s *Script, args []*ScriptNode) Result {
 	assertArity("if", 3, args)
 
-	condition := args[0].Eval()
+	condition := s.Eval(args[0])
 	if condition.Type != ResultInt {
 		return condition
 	}
 	if condition.Int > 0 {
-		return args[1].Eval()
+		return s.Eval(args[1])
 	} else {
-		return args[2].Eval()
+		return s.Eval(args[2])
 	}
 }
 
-func RS_And(args []*ScriptNode) Result {
+func RS_And(s *Script, args []*ScriptNode) Result {
 	assertArity("and", 2, args)
 	var condition Result = ResultFalse
 
 	for _, arg := range args {
-		condition = arg.Eval()
+		condition = s.Eval(arg)
 		if condition.Type != ResultInt {
 			return condition
 		}
@@ -338,11 +333,11 @@ func RS_And(args []*ScriptNode) Result {
 	return condition
 }
 
-func RS_Or(args []*ScriptNode) Result {
+func RS_Or(s *Script, args []*ScriptNode) Result {
 	assertArity("or", 2, args)
 
 	for _, arg := range args {
-		condition := arg.Eval()
+		condition := s.Eval(arg)
 		if condition.Type != ResultInt || condition.Int > 0 {
 			return condition
 		}
@@ -351,10 +346,10 @@ func RS_Or(args []*ScriptNode) Result {
 	return ResultFalse
 }
 
-func RS_Not(args []*ScriptNode) Result {
+func RS_Not(s *Script, args []*ScriptNode) Result {
 	assertArity("not", 1, args)
 
-	condition := args[0].Eval()
+	condition := s.Eval(args[0])
 	if condition.Int > 0 {
 		return ResultFalse
 	} else {
@@ -362,9 +357,11 @@ func RS_Not(args []*ScriptNode) Result {
 	}
 }
 
-// func RS_GoNorth(args []*ScriptNode) Result {
-// 	return Result{Type: ResultAction, Action: Action{Type: ActionMove, Bot: }
-// }
+func RS_GoNorth(s *Script, args []*ScriptNode) Result {
+	dir := relativeToActualDirection(North, s.State.CurrentBot.Team)
+	destination := s.State.Arena.DestinationCellAfterMove(s.State.CurrentBot.Position, dir)
+	return Result{Type: ResultAction, Action: Action{Type: ActionMove, Actor: s.State.CurrentBot, Target: destination}}
+}
 
 // FIXME: We should move all function lookups and arity checks to compile-time.
 func assertArity(name string, n int, args []*ScriptNode) {
