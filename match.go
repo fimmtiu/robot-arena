@@ -18,6 +18,7 @@ type Bot struct {
 
 type Match struct {
 	Arena *Arena
+	Visualizer Visualizer
 	Id int
 	Bots []Bot
 	Tick int
@@ -29,10 +30,10 @@ type Match struct {
 
 var currentMatch *Match
 
-func NewMatch(arena *Arena, id int, scriptId_A int, scriptId_B int) *Match {
+func NewMatch(arena *Arena, visualizer Visualizer, id int, scriptId_A int, scriptId_B int) *Match {
 	arena.Reset()
 	match := &Match{
-		arena, id, make([]Bot, BOTS_PER_TEAM * 2), 0, scriptId_A, scriptId_B, 0, 0,
+		arena, visualizer, id, make([]Bot, BOTS_PER_TEAM * 2), 0, scriptId_A, scriptId_B, 0, 0,
 	}
 
 	scriptA := fileManager.LoadScript(scriptId_A)
@@ -68,6 +69,9 @@ func (m *Match) RunTick() bool {
 	// if the game is over
 	//   return true
 
+	if m.Visualizer != nil {
+		m.Visualizer.Update()
+	}
 	m.Tick++
 	return false
 }

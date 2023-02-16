@@ -76,7 +76,6 @@ func LoadArena(filename string) (a *Arena) {
 		logger.Fatalf("Couldn't parse %s file '%s': %v", format, filename, err)
 	}
 
-	logger.Printf("Arena: %d x %d.", img.Bounds().Dx(), img.Bounds().Dy())
 	return NewArena(img)
 }
 

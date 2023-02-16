@@ -19,12 +19,15 @@ func main() {
 	logger = log.New(os.Stdout, "", log.Ldate | log.Ltime)
 	InitScript()
 
-	// read command line arguments, including scenario name
+	// FIXME: read command line arguments, including scenario name
 	fileManager = NewFileManager("monkey", 1)
 
 	arena := LoadArena("arena.png")
 	logger.Printf("Loaded %dx%d arena.", arena.Width, arena.Height)
 
-	currentMatch = NewMatch(arena, 1, 1, 1)
+	vis := NewGifVisualizer()
+
+	currentMatch = NewMatch(arena, vis, 1, 1, 1)
+	vis.Init(currentMatch)
 	currentMatch.RunTick()
 }
