@@ -25,16 +25,21 @@ type Bot struct {
 	Team Team
 	Id int
 	Position *Cell
-	Script *ScriptNode
+	Script Script
 	Alive bool
 }
 
-type Match struct {
+type GameState struct {
 	Arena *Arena
+	Bots []Bot
+	CurrentBot *Bot
+	Tick int
+}
+
+type Match struct {
+	State *GameState
 	Visualizer Visualizer
 	Id int
-	Bots []Bot
-	Tick int
 	ScriptA int
 	ScriptB int
 	ScoreA int
@@ -45,26 +50,25 @@ var currentMatch *Match
 
 func NewMatch(arena *Arena, visualizer Visualizer, id int, scriptId_A int, scriptId_B int) *Match {
 	arena.Reset()
-	match := &Match{
-		arena, visualizer, id, make([]Bot, BOTS_PER_TEAM * 2), 0, scriptId_A, scriptId_B, 0, 0,
-	}
+	state := &GameState{arena, make([]Bot, BOTS_PER_TEAM * 2), nil, 0}
+	match := &Match{state, visualizer, id,  scriptId_A, scriptId_B, 0, 0}
 
-	scriptA := fileManager.LoadScript(scriptId_A)
-	scriptB := fileManager.LoadScript(scriptId_B)
+	scriptA := fileManager.LoadScript(state, scriptId_A)
+	scriptB := fileManager.LoadScript(state, scriptId_B)
 
 	for teamAindex := 0; teamAindex < BOTS_PER_TEAM; teamAindex++ {
-		match.Bots[teamAindex].Team = TeamA
-		match.Bots[teamAindex].Id = teamAindex
-		match.Bots[teamAindex].Position = arena.TeamASpawns[teamAindex]
-		match.Bots[teamAindex].Script = scriptA
-		match.Bots[teamAindex].Alive = true
+		state.Bots[teamAindex].Team = TeamA
+		state.Bots[teamAindex].Id = teamAindex
+		state.Bots[teamAindex].Position = arena.TeamASpawns[teamAindex]
+		state.Bots[teamAindex].Script = scriptA
+		state.Bots[teamAindex].Alive = true
 
 		teamBindex := teamAindex + BOTS_PER_TEAM
-		match.Bots[teamBindex].Team = TeamB
-		match.Bots[teamBindex].Id = teamBindex
-		match.Bots[teamBindex].Position = arena.TeamBSpawns[teamAindex]
-		match.Bots[teamBindex].Script = scriptB
-		match.Bots[teamBindex].Alive = true
+		state.Bots[teamBindex].Team = TeamB
+		state.Bots[teamBindex].Id = teamBindex
+		state.Bots[teamBindex].Position = arena.TeamBSpawns[teamAindex]
+		state.Bots[teamBindex].Script = scriptB
+		state.Bots[teamBindex].Alive = true
 	}
 
 	return match
@@ -72,6 +76,9 @@ func NewMatch(arena *Arena, visualizer Visualizer, id int, scriptId_A int, scrip
 
 // Returns true if the game is over and false if it's still going.
 func (m *Match) RunTick() bool {
+	for i := range m.State.Bots { // FIXME: Alternate between teams
+		m.RunOneBot(&m.State.Bots[i])
+	}
 	// for each bot
 	//   run its script
 	//   get associated action
@@ -85,15 +92,28 @@ func (m *Match) RunTick() bool {
 	if m.Visualizer != nil {
 		m.Visualizer.Update(Action{Type: ActionWait})
 	}
-	m.Tick++
+	m.State.Tick++
 	return false
+}
+
+func (m *Match) RunOneBot(bot *Bot) {
+	m.State.CurrentBot = bot
+	action := bot.Script.Run()
+	switch action.Action.Type {
+
+	}
+	//   run its script
+	//   get associated action
+	//   do it
+	//   update cell statistics?
+	//   update score?
 }
 
 func (m *Match) BotMove(bot Bot, relativeDirection Direction) {
 	actualDirection := relativeToActualDirection(relativeDirection, bot.Team)
-	destinationCell := m.Arena.DestinationCellAfterMove(bot.Position, actualDirection)
+	destinationCell := m.State.Arena.DestinationCellAfterMove(bot.Position, actualDirection)
 
-	for _, otherBot := range m.Bots {
+	for _, otherBot := range m.State.Bots {
 		if bot.Id != otherBot.Id && bot.Position == destinationCell {
 			destinationCell = bot.Position
 		}

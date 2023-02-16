@@ -11,14 +11,14 @@ import (
 )
 
 type Visualizer interface {
-	Init(match *Match)         // Called when the game state is initialized
+	Init(state *GameState)         // Called when the game state is initialized
 	Update(action Action)      // Called once per action to tell the visualizer to record the current state
 	Finish(outputPath string)  // Writes the entire story to a file
 }
 
 type GifVisualizer struct {
 	Dir string
-	Match *Match
+	State *GameState
 	NextFileIndex int
 
 	blackSquare image.Image
@@ -47,18 +47,20 @@ func NewGifVisualizer() *GifVisualizer {
 	}
 }
 
-func (vis *GifVisualizer) Init(match *Match) {
-	vis.Match = match
+func (vis *GifVisualizer) Init(state *GameState) {
+	vis.State = state
 }
 
 func (vis *GifVisualizer) Update(action Action) {
-	frame := image.NewRGBA(image.Rect(0, 0, vis.Match.Arena.Width * GIF_SCALE, vis.Match.Arena.Height * GIF_SCALE))
+	width := vis.State.Arena.Width
+	height := vis.State.Arena.Height
+	frame := image.NewRGBA(image.Rect(0, 0, width * GIF_SCALE, height * GIF_SCALE))
 	swatch := image.Rect(0, 0, GIF_SCALE, GIF_SCALE)
 
 	// Draw the map
-	for x := 0; x < vis.Match.Arena.Width; x++ {
-		for y := 0; y < vis.Match.Arena.Height; y++ {
-			cell := vis.Match.Arena.Cells[x * vis.Match.Arena.Height + y]
+	for x := 0; x < width; x++ {
+		for y := 0; y < height; y++ {
+			cell := vis.State.Arena.Cells[x * height + y]
 			rect := image.Rect(x * GIF_SCALE, y * GIF_SCALE, (x + 1) * GIF_SCALE, (y + 1) * GIF_SCALE)
 			switch cell.Type {
 			case Wall:
@@ -72,7 +74,7 @@ func (vis *GifVisualizer) Update(action Action) {
 	}
 
 	// Draw the bots
-	for _, bot := range vis.Match.Bots {
+	for _, bot := range vis.State.Bots {
 		rect := image.Rect(bot.Position.X * GIF_SCALE, bot.Position.Y * GIF_SCALE,
 											(bot.Position.X + 1) * GIF_SCALE, (bot.Position.Y + 1) * GIF_SCALE)
 		if bot.Team == TeamA {

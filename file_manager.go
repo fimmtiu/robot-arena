@@ -24,14 +24,14 @@ func NewFileManager(scenario string, generation int) *FileManager {
 	return fm
 }
 
-func (fm *FileManager) LoadScript(id int) *ScriptNode {
+func (fm *FileManager) LoadScript(state *GameState, id int) Script {
 	path := fmt.Sprintf("scenario/%s/gen_%d/scripts/%d.l", fm.Scenario, fm.Generation, id)
 	source, err := os.ReadFile(path)
 	if err != nil {
 		logger.Fatalf("Couldn't read script %s: %v", path, err)
 	}
 
-	return ParseScript(string(source))
+	return Script{ParseScript(string(source)), state}
 }
 
 
@@ -51,10 +51,11 @@ func (fm *FileManager) RecordResults(match *Match) error {
 }
 
 func (fm *FileManager) writeCellStatistics(match *Match) error {
+	arena := match.State.Arena
 	path := fmt.Sprintf("scenario/%s/gen_%d/cells", fm.Scenario, fm.Generation)
-	buf := make([]byte, 0, match.Arena.Width * match.Arena.Height * MAX_BYTES_PER_CELL)
+	buf := make([]byte, 0, arena.Width * arena.Height * MAX_BYTES_PER_CELL)
 
-	for _, cell := range match.Arena.Cells {
+	for _, cell := range arena.Cells {
 		if cell.Moves == 0 && cell.Shots == 0 && cell.Kills == 0 && cell.Waits == 0 {
 			continue
 		}
@@ -93,7 +94,7 @@ func (fm *FileManager) writeMatchOutcome(match *Match) error {
 		logger.Fatalf("Can't stat %s: %v", path, err)
 	}
 
-	row := fmt.Sprintf("%d,%d,%d,%d,%d,%d\n", match.Id, match.ScriptA, match.ScriptB, match.ScoreA, match.ScoreB, match.Tick)
+	row := fmt.Sprintf("%d,%d,%d,%d,%d,%d\n", match.Id, match.ScriptA, match.ScriptB, match.ScoreA, match.ScoreB, match.State.Tick)
 	written, err := file.WriteString(row)
 	if err != nil {
 		logger.Fatalf("Couldn't write %d characters to %s: %v", len(row), path, err)

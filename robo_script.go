@@ -41,6 +41,21 @@ type ScriptNode struct {
 	N int
 }
 
+type Script struct {
+	Code *ScriptNode
+	State *GameState
+}
+
+// If the script returns a number instead of performing an action, just wait.
+func (s *Script) Run() Result {
+	result := s.Code.Eval()
+	if result.Type != ResultAction {
+		result.Type = ResultAction
+		result.Action = Action{Type: ActionWait}
+	}
+	return result
+}
+
 func ParseScript(code string) *ScriptNode {
 	node, _, err := readToken(code)
 	if err != nil {
@@ -140,6 +155,7 @@ func (node *ScriptNode) Eval() Result {
 var functionLookupTable = make(map[string]Function)
 
 func InitScript() {
+	// Base functionality
 	functionLookupTable["+"] = RS_Add
 	functionLookupTable["-"] = RS_Subtract
 	functionLookupTable["*"] = RS_Multiply
@@ -152,6 +168,9 @@ func InitScript() {
 	functionLookupTable["and"] = RS_And
 	functionLookupTable["or"] = RS_Or
 	functionLookupTable["not"] = RS_Not
+
+	// Actions
+	// functionLookupTable["go-north"] = RS_GoNorth
 }
 
 func ResolveFunction(name string) (Function, error) {
@@ -342,6 +361,10 @@ func RS_Not(args []*ScriptNode) Result {
 		return ResultTrue
 	}
 }
+
+// func RS_GoNorth(args []*ScriptNode) Result {
+// 	return Result{Type: ResultAction, Action: Action{Type: ActionMove, Bot: }
+// }
 
 // FIXME: We should move all function lookups and arity checks to compile-time.
 func assertArity(name string, n int, args []*ScriptNode) {

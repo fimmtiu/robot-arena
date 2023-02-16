@@ -28,6 +28,6 @@ func main() {
 	vis := NewGifVisualizer()
 
 	currentMatch = NewMatch(arena, vis, 1, 1, 1)
-	vis.Init(currentMatch)
+	vis.Init(currentMatch.State)
 	currentMatch.RunTick()
 }
