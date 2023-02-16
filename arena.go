@@ -129,7 +129,7 @@ func intToTeam(color uint32) Team {
 	return TeamB
 }
 
-// Pre-calculate visibility for all cells. It'll be slow as hell (n^2), but it only happens once on startup.
+// Pre-calculate visibility for all cells. It's slow (n^2), but it only happens once on startup.
 // There are a lot of optimizations we could do here if we need to.
 func (a *Arena) calculateVisibility() {
 	visibleCells := 0
@@ -140,7 +140,6 @@ func (a *Arena) calculateVisibility() {
 
 		for j := 0; j < len(a.Cells); j++ {
 			otherCell := &a.Cells[j]
-			// logger.Printf("Tracing line from (%d, %d) to (%d, %d)", cell.X, cell.Y, otherCell.X, otherCell.Y)
 			a.TraceLine(cell.X, cell.Y, otherCell.X, otherCell.Y, func (c *Cell) bool {
 				if c.BlocksVision() {
 					return false

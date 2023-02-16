@@ -8,6 +8,19 @@ const (
 	West
 )
 
+type ActionType int
+const (
+	ActionMove ActionType = iota
+	ActionWait
+	ActionShoot
+)
+
+type Action struct {
+	Type ActionType
+	Actor Bot
+	Target *Cell
+}
+
 type Bot struct {
 	Team Team
 	Id int
@@ -70,7 +83,7 @@ func (m *Match) RunTick() bool {
 	//   return true
 
 	if m.Visualizer != nil {
-		m.Visualizer.Update()
+		m.Visualizer.Update(Action{Type: ActionWait})
 	}
 	m.Tick++
 	return false

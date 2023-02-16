@@ -12,7 +12,7 @@ import (
 
 type Visualizer interface {
 	Init(match *Match)         // Called when the game state is initialized
-	Update()                   // Called once per action to tell the visualizer to record the current state
+	Update(action Action)      // Called once per action to tell the visualizer to record the current state
 	Finish(outputPath string)  // Writes the entire story to a file
 }
 
@@ -24,9 +24,13 @@ type GifVisualizer struct {
 	blackSquare image.Image
 	whiteSquare image.Image
 	greenSquare image.Image
+	redSquare image.Image
+	blueSquare image.Image
+	lightRedSquare image.Image
+	lightBlueSquare image.Image
 }
 
-const GIF_SCALE = 32
+const GIF_SCALE = 16
 const NUM_COLORS = 256 // FIXME: Look into how to reduce this without the palettizing breaking everything.
 // (I think we'd have to create a custom palette and pass it in.)
 
@@ -36,15 +40,18 @@ func NewGifVisualizer() *GifVisualizer {
 		logger.Fatalf("Could not create temporary directory %s: %v", dir, err)
 	}
 
-	return &GifVisualizer{dir, nil, 0, makeSolidSquare(0, 0, 0), makeSolidSquare(255, 255, 255), makeSolidSquare(0, 255, 0)}
+	return &GifVisualizer{
+		dir, nil, 0,
+		makeSolidSquare(0, 0, 0), makeSolidSquare(255, 255, 255),	makeSolidSquare(0, 255, 0), makeSolidSquare(255, 0, 0),
+		makeSolidSquare(0, 0, 255), makeSolidSquare(255, 100, 100),	makeSolidSquare(100, 100, 255),
+	}
 }
 
 func (vis *GifVisualizer) Init(match *Match) {
 	vis.Match = match
-	logger.Printf("White: %v", vis.whiteSquare)
 }
 
-func (vis *GifVisualizer) Update() {
+func (vis *GifVisualizer) Update(action Action) {
 	frame := image.NewRGBA(image.Rect(0, 0, vis.Match.Arena.Width * GIF_SCALE, vis.Match.Arena.Height * GIF_SCALE))
 	swatch := image.Rect(0, 0, GIF_SCALE, GIF_SCALE)
 
@@ -64,6 +71,25 @@ func (vis *GifVisualizer) Update() {
 		}
 	}
 
+	// Draw the bots
+	for _, bot := range vis.Match.Bots {
+		rect := image.Rect(bot.Position.X * GIF_SCALE, bot.Position.Y * GIF_SCALE,
+											(bot.Position.X + 1) * GIF_SCALE, (bot.Position.Y + 1) * GIF_SCALE)
+		if bot.Team == TeamA {
+			if bot.Alive {
+				draw.Draw(frame, rect, vis.redSquare, swatch.Min, draw.Src)
+			} else {
+				draw.Draw(frame, rect, vis.lightRedSquare, swatch.Min, draw.Src)
+			}
+		} else {
+			if bot.Alive {
+				draw.Draw(frame, rect, vis.blueSquare, swatch.Min, draw.Src)
+			} else {
+				draw.Draw(frame, rect, vis.lightBlueSquare, swatch.Min, draw.Src)
+			}
+		}
+	}
+
 	path := fmt.Sprintf("%s/frame_%d.gif", vis.Dir, vis.NextFileIndex)
 	vis.NextFileIndex++
 
@@ -76,7 +102,7 @@ func (vis *GifVisualizer) Update() {
 }
 
 func (vis *GifVisualizer) Finish(outputPath string) {
-	// FIXME make gif
+
 
 	// if err := os.RemoveAll(vis.Dir); err != nil {
 	// 	logger.Fatalf("Could not destroy temporary directory %s: %v", vis.Dir, err)

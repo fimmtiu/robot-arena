@@ -17,7 +17,7 @@ const (
 // Let's just use crappy pseudo-unions for now. Not memory-efficient, but simple.
 type Result struct {
 	Type ResultType
-	Action string
+	Action Action
 	Err error
 	Int int
 }
@@ -343,7 +343,7 @@ func RS_Not(args []*ScriptNode) Result {
 	}
 }
 
-// FIXME: We could move all function lookups and arity checks to compile-time.
+// FIXME: We should move all function lookups and arity checks to compile-time.
 func assertArity(name string, n int, args []*ScriptNode) {
 	if len(args) < n {
 		logger.Fatalf("Not enough arguments to %s!", name)
