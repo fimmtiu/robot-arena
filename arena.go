@@ -99,7 +99,7 @@ func NewArena(img image.Image) *Arena {
 			red, green, blue, _ := img.At(x, y).RGBA()
 			if red == 0 && green == 0 && blue == 0 {  // Black pixels indicate walls.
 				cell.Type = Wall
-			} else if red == 65535 && green == 65535 && blue == 65535 { // White pixels indicate open space.
+				} else if red == 65535 && green == 65535 && blue == 65535 { // White pixels indicate open space.
 				cell.Type = Open
 			} else if red == 65535 { // Red pixels indicate spawn points.
 				cell.Type = Spawn
@@ -120,7 +120,6 @@ func NewArena(img image.Image) *Arena {
 
 	a.verifyValidArena()
 	a.calculateVisibility()
-	a.Reset() // FIXME: Do this at the start of the game instead.
 	return a
 }
 
@@ -221,6 +220,31 @@ func (a *Arena) Reset() {
 		cell.Kills = 0
 		cell.Waits = 0
 	}
+}
+
+// Can a unit in cell `c` move in direction `dir`, or is it blocked by a wall? Returns the destination cell if it's a
+// valid move, or the current cell if the move is blocked by a wall or map border.
+// (We also need to test for the presence of another unit in the destination space, but Match does that.)
+func (a *Arena) DestinationCellAfterMove(c *Cell, dir Direction) *Cell {
+	switch dir {
+	case North:
+		if c.Y > 0 && a.Cells[c.X * a.Height + c.Y - 1].BotsCanPass() {
+			return &a.Cells[c.X * a.Height + c.Y - 1]
+		}
+	case South:
+		if c.Y < a.Height - 1 && a.Cells[c.X * a.Height + c.Y + 1].BotsCanPass() {
+			return &a.Cells[c.X * a.Height + c.Y + 1]
+		}
+	case East:
+		if c.X < a.Width - 1 && a.Cells[(c.X + 1) * a.Height + c.Y].BotsCanPass() {
+			return &a.Cells[(c.X + 1) * a.Height + c.Y]
+		}
+	case West:
+		if c.X > 0 && a.Cells[(c.X - 1) * a.Height + c.Y].BotsCanPass() {
+			return &a.Cells[(c.X - 1) * a.Height + c.Y]
+		}
+	}
+	return c
 }
 
 // Verify that the map has five spawns and one goal for each team.

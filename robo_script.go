@@ -104,7 +104,7 @@ func readToken(code string) (*ScriptNode, string, error) {
 
 	} else if !unicode.IsSpace(rune(code[0])) {
 		s := string(code[0])
-		for i := 1; !unicode.IsSpace(rune(code[i])); i++ {
+		for i := 1; i < len(code) - 1 && !unicode.IsSpace(rune(code[i])); i++ {
 			s += string(code[i])
 		}
 		node.Type = Symbol
@@ -324,10 +324,7 @@ func RS_Or(args []*ScriptNode) Result {
 
 	for _, arg := range args {
 		condition := arg.Eval()
-		if condition.Type != ResultInt {
-			return condition
-		}
-		if condition.Int > 0 {
+		if condition.Type != ResultInt || condition.Int > 0 {
 			return condition
 		}
 	}

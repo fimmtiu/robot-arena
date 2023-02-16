@@ -122,7 +122,7 @@ When a game ends, terminal output for the final score.
 
 Files:
 
-`scenario/foo/gen/1/spaces`: A file containing a series of these binary packed structures:
+`scenario/foo/gen_1/cells`: A file containing a series of these binary packed structures:
   * First two bits: type (move, shoot, kill)
   * 7 bits: x coord
   * 7 bits: y coord
@@ -131,8 +131,8 @@ Files:
 Each complete game will emit one record of each type for each non-zero square on the board. (Only record successful
 moves, not bumping-into-wall failures.)
 
-`scenario/foo/gen/1/results`: A CSV file with the following header:
+`scenario/foo/gen_1/results`: A CSV file with the following header:
 
-generation,game,scriptA,scriptB,scoreA,scoreB,turns
+generation,matchId,scriptA,scriptB,scoreA,scoreB,ticks
 
-`scenario/foo/gen/1/scripts/1`: A Janet file of auto-generated script code.
+`scenario/foo/gen_1/scripts/1.l`: A file of auto-generated RoboScript code.
