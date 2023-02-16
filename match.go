@@ -98,32 +98,30 @@ func (m *Match) RunTick() bool {
 
 func (m *Match) RunOneBot(bot *Bot) {
 	m.State.CurrentBot = bot
-	action := bot.Script.Run()
-	switch action.Action.Type {
-
+	action := bot.Script.Run().Action
+	switch action.Type {
+	case ActionWait:
+		bot.Position.Waits++
+	case ActionMove:
+		m.BotMove(bot, action.Target)
 	}
-	//   run its script
-	//   get associated action
-	//   do it
 	//   update cell statistics?
 	//   update score?
 }
 
-func (m *Match) BotMove(bot Bot, relativeDirection Direction) {
-	actualDirection := relativeToActualDirection(relativeDirection, bot.Team)
-	destinationCell := m.State.Arena.DestinationCellAfterMove(bot.Position, actualDirection)
-
+// If the space is passable but another bot is in the space, it's the same as hitting a wall.
+func (m *Match) BotMove(bot *Bot, destination *Cell) {
 	for _, otherBot := range m.State.Bots {
-		if bot.Id != otherBot.Id && bot.Position == destinationCell {
-			destinationCell = bot.Position
+		if bot.Id != otherBot.Id && bot.Position == destination {
+			destination = bot.Position
 		}
 	}
 
-	if bot.Position != destinationCell {
-		destinationCell.Moves++
+	if bot.Position != destination {
+		destination.Moves++
 	}
 
-	bot.Position = destinationCell
+	bot.Position = destination
 }
 
 // Each team considers "north" to be the direction of the enemy's goal, and "south" to be the direction of its own side.

@@ -7,6 +7,7 @@ import (
 	"image/draw"
 	"image/gif"
 	"os"
+	"os/exec"
 	"time"
 )
 
@@ -104,11 +105,16 @@ func (vis *GifVisualizer) Update(action Action) {
 }
 
 func (vis *GifVisualizer) Finish(outputPath string) {
+	convertCommand := fmt.Sprintf("convert -delay 100 -loop 0 %s/*.gif %s", vis.Dir, outputPath)
+	cmd := exec.Command("/bin/sh", "-c", convertCommand)
+	err := cmd.Run()
+	if err != nil {
+		logger.Fatalf("Failed to run 'convert': %v", err)
+	}
 
-
-	// if err := os.RemoveAll(vis.Dir); err != nil {
-	// 	logger.Fatalf("Could not destroy temporary directory %s: %v", vis.Dir, err)
-	// }
+	if err := os.RemoveAll(vis.Dir); err != nil {
+		logger.Fatalf("Could not destroy temporary directory %s: %v", vis.Dir, err)
+	}
 }
 
 // We pre-generate some solid color swatches so that we can copy them over in big rectangles instead of laboriously
