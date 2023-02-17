@@ -7,45 +7,51 @@ package main
 // The callback gets (x, y) coords of each grid cell on the line. If it returns false, we stop executing immediately and
 // return false. Otherwise, we return true at the end of the line.
 func BresenhamLine(x0, y0, x1, y1 int, callback func(x, y int) bool) bool {
-	var dx, dy, sx, sy, error int
+	var delta_x, delta_y, sign_x, sign_y int
+	flip := false
 
-	dx = intAbs(x1 - x0)
+	delta_x = intAbs(x1 - x0)
 	if x0 < x1 {
-		sx = 1
+		sign_x = 1
 	} else {
-		sx = -1
+		sign_x = -1
 	}
-	dy = intAbs(y1 - y0)
+	delta_y = intAbs(y1 - y0)
 	if y0 < y1 {
-		sy = 1
+		sign_y = 1
 	} else {
-		sy = -1
+		sign_y = -1
 	}
-	error = dx + dy
 
-	for {
+	if delta_x < delta_y {
+		temp := delta_x
+		delta_x = delta_y
+		delta_y = temp
+		flip = true
+	}
+
+	a := 2 * delta_y
+	e := a - delta_x
+	b := a - 2 * delta_x
+
+	if callback(x0, y0) == false {
+		return false
+	}
+	for i := 1; i < delta_x + 1; i++ {
+		if e < 0 {
+			if flip {
+				y0 += sign_y
+			} else {
+				x0 += sign_x
+			}
+			e += a
+		} else {
+			x0 += sign_x
+			y0 += sign_y
+			e += b
+		}
 		if callback(x0, y0) == false {
 			return false
-		}
-
-		if x0 == x1 && y0 == y1 {
-			break
-		}
-
-		e2 := 2 * error
-		if e2 >= dy {
-			if x0 == x1 {
-				break
-			}
-			error += dy
-			x0 += sx
-		}
-		if e2 <= dx {
-			if y0 == y1 {
-				break
-			}
-			error += dx
-			y0 += sy
 		}
 	}
 

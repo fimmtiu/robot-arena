@@ -384,10 +384,8 @@ func RS_CanMove(s *Script, args []*ScriptNode) Result {
 	dir := relativeToActualDirection(Direction(direction.Int % int(NumberOfDirections)), s.State.CurrentBot.Team)
 	destination := s.State.Arena.DestinationCellAfterMove(s.State.CurrentBot.Position, dir)
 	if s.State.CellIsEmpty(destination) {
-		// logger.Printf("(can-move? %d) is true", dir)
 		return ResultTrue
 	} else {
-		// logger.Printf("(can-move? %d) is false", dir)
 		return ResultFalse
 	}
 }

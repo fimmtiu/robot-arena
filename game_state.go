@@ -51,10 +51,12 @@ func (gs *GameState) GoalAtCell(cell *Cell) *Goal {
 
 func (gs *GameState) FirstNonEmptyCellOnLine(src *Cell, dest *Cell) *Cell {
 	var found *Cell = nil
+	iterations := 0
 
 	BresenhamLine(src.X, src.Y, dest.X, dest.Y, func(x, y int) bool {
+		iterations++
 		c := &gs.Arena.Cells[x * gs.Arena.Height + y]
-		if !gs.CellIsEmpty(c) {
+		if !gs.CellIsEmpty(c) && c != src {
 			found = c
 			return false
 		}
@@ -114,12 +116,15 @@ func (gs *GameState) IsGameOver() bool {
 	}
 
 	if alive[TeamA] == 0 || alive[TeamB] == 0 { // One team is wiped out
+		logger.Printf("A team died: A %d, B %d", alive[TeamA], alive[TeamB])
 		return true
 	}
 	if !gs.Goals[TeamA].Alive || !gs.Goals[TeamB].Alive { // A goal has been destroyed
+		logger.Printf("A goal died: A %v, B %v", gs.Goals[TeamA].Alive, gs.Goals[TeamB].Alive)
 		return true
 	}
 	if gs.Tick >= MAX_TICKS_PER_GAME { // The game has run over the max allowed time
+		logger.Printf("Game ran out of time.")
 		return true
 	}
 

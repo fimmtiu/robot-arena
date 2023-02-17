@@ -136,15 +136,19 @@ func (m *Match) BotShoot(bot *Bot, action Action) {
 			targetBot.Alive = false
 			targetBot.Position.Kills++
 			if targetBot.Team == bot.Team {
+				logger.Printf("Friendly fire on team %d!", bot.Team)
 				m.Scores[bot.Team] -= 2  // penalty for friendly fire
 			} else {
+				logger.Printf("A bot from team %d killed a bot from team %d", bot.Team, targetBot.Team)
 				m.Scores[bot.Team] += 1
 			}
 		} else if targetGoal != nil {
 			targetGoal.Alive = false
-			if targetBot.Team == bot.Team {
+			if targetGoal.Team == bot.Team {
+				logger.Printf("Own goal for team %d!", bot.Team)
 				m.Scores[bot.Team] -= 20  // massive penalty for an own-goal
 			} else {
+				logger.Printf("Team %d destroyed the other team's goal", bot.Team)
 				m.Scores[bot.Team] += 10
 			}
 		}
