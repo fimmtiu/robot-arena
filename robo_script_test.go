@@ -17,8 +17,8 @@ func TestScript1(t *testing.T) {
 	assert.Equal(t, 3, len(node.Children))
 
 	assert.Empty(t, node.Children[0].Children)
-	assert.Equal(t, Symbol, node.Children[0].Type)
-	assert.Equal(t, "+", node.Children[0].Sym)
+	assert.Equal(t, FuncName, node.Children[0].Type)
+	assert.Equal(t, "+", node.Children[0].Func.Name)
 
 	assert.Empty(t, node.Children[1].Children)
 	assert.Equal(t, Int, node.Children[1].Type)
@@ -30,7 +30,7 @@ func TestScript1(t *testing.T) {
 }
 
 func TestScript2(t *testing.T) {
-	code := "(+ 1 (foo 22))"
+	code := "(+ 1 (not 22))"
 	node, remaining, err := readToken(code)
 
 	assert.Empty(t, remaining)
@@ -40,8 +40,8 @@ func TestScript2(t *testing.T) {
 	assert.Equal(t, 3, len(node.Children))
 
 	assert.Empty(t, node.Children[0].Children)
-	assert.Equal(t, Symbol, node.Children[0].Type)
-	assert.Equal(t, "+", node.Children[0].Sym)
+	assert.Equal(t, FuncName, node.Children[0].Type)
+	assert.Equal(t, "+", node.Children[0].Func.Name)
 
 	assert.Empty(t, node.Children[1].Children)
 	assert.Equal(t, Int, node.Children[1].Type)
@@ -51,8 +51,8 @@ func TestScript2(t *testing.T) {
 	assert.Equal(t, Expr, node.Children[2].Type)
 
 	assert.Empty(t, node.Children[2].Children[0].Children)
-	assert.Equal(t, Symbol, node.Children[2].Children[0].Type)
-	assert.Equal(t, "foo", node.Children[2].Children[0].Sym)
+	assert.Equal(t, FuncName, node.Children[2].Children[0].Type)
+	assert.Equal(t, "not", node.Children[2].Children[0].Func.Name)
 
 	assert.Empty(t, node.Children[2].Children[1].Children)
 	assert.Equal(t, Int, node.Children[2].Children[1].Type)
@@ -92,11 +92,34 @@ func TestScriptEmptyList(t *testing.T) {
 }
 
 func TestScriptSymbolInArgumentPosition(t *testing.T) {
-	code := "(+ foo 2)"
+	code := "(+ not 2)"
 	node, _, err := readToken(code)
 
 	assert.Nil(t, node)
-	assert.ErrorContains(t, err, "Symbol 'foo' passed as function argument")
+	assert.ErrorContains(t, err, "Symbol 'not' passed as function argument")
+}
+
+func TestUndefinedFunction(t *testing.T) {
+	code := "(monkey 1 2)"
+	node, _, err := readToken(code)
+
+	assert.Nil(t, node)
+	assert.ErrorContains(t, err, "No such function: 'monkey'")
+
+}
+
+func TestArityErrors(t *testing.T) {
+	code := "(+ 1 2 3)"
+	node, _, err := readToken(code)
+
+	assert.Nil(t, node)
+	assert.ErrorContains(t, err, "Wrong number of arguments to '+': got 3, expected 2")
+
+	code = "(+ 1)"
+	node, _, err = readToken(code)
+
+	assert.Nil(t, node)
+	assert.ErrorContains(t, err, "Wrong number of arguments to '+': got 1, expected 2")
 }
 
 func TestAddNumbers(t *testing.T) {

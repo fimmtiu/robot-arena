@@ -105,7 +105,7 @@ func (vis *GifVisualizer) Update(action Action) {
 
 func (vis *GifVisualizer) Finish(outputPath string) {
 	logger.Printf("Creating output GIF...")
-	convertCommand := fmt.Sprintf("convert -delay 100 -loop 0 %s/*.png %s", vis.Dir, outputPath)
+	convertCommand := fmt.Sprintf("convert -delay 40 -loop 0 %s/*.png %s", vis.Dir, outputPath)
 	cmd := exec.Command("/bin/sh", "-c", convertCommand)
 	err := cmd.Run()
 	if err != nil {
