@@ -6,22 +6,91 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"path/filepath"
+	"regexp"
+	"sort"
+	"strconv"
 )
 
 type FileManager struct {
 	Scenario string
 	Generation int
+	ScriptIds []int
 }
 
+var scriptIdRegexp = regexp.MustCompile(`/(\d+).l$`)
+var generationRegexp = regexp.MustCompile(`/gen_(\d+)$`)
+
 func NewFileManager(scenario string, generation int) *FileManager {
-	fm := &FileManager{scenario, generation}
+	fm := &FileManager{scenario, generation, make([]int, SCRIPTS_PER_GENERATION)}
 
 	path := fmt.Sprintf("scenario/%s/gen_%d/scripts", scenario, generation)
 	if err := os.MkdirAll(path, 0755); err != nil {
 		logger.Fatalf("Failed to create directory %s: %v", path, err)
 	}
 
+	pattern := fmt.Sprintf("scenario/%s/gen_%d/scripts/*", fm.Scenario, fm.Generation)
+	filenames, err := filepath.Glob(pattern)
+	if err != nil {
+		logger.Fatalf("Can't glob %s: %v", pattern, err)
+	}
+
+	for _, filename := range filenames {
+		submatches := scriptIdRegexp.FindStringSubmatch(filename)
+		if len(submatches) != 2 {
+			logger.Fatalf("Unparseable name in scripts directory: %v", filename)
+		}
+		number, err := strconv.Atoi(submatches[1])
+		if err != nil {
+			logger.Fatalf("Can't convert name to number: %v, %v", filename, err)
+		}
+
+		fm.ScriptIds = append(fm.ScriptIds, number)
+	}
+	sort.Ints(fm.ScriptIds)
+
 	return fm
+}
+
+func currentHighestGeneration(scenario string) int {
+	generations := []int{}
+	pattern := fmt.Sprintf("scenario/%s/gen_*", scenario)
+	dirnames, err := filepath.Glob(pattern)
+	if err != nil {
+		logger.Fatalf("Can't glob %s: %v", pattern, err)
+	}
+
+	for _, dirname := range dirnames {
+		submatches := scriptIdRegexp.FindStringSubmatch(dirname)
+		if len(submatches) != 2 {
+			logger.Fatalf("Unparseable name in scenario directory: %v", dirname)
+		}
+		number, err := strconv.Atoi(submatches[0])
+		if err != nil {
+			logger.Fatalf("Can't convert name to number: %v, %v", dirname, err)
+		}
+		logger.Printf("    dirname '%s' => %d", dirname, number)
+
+		generations = append(generations, number)
+	}
+
+	sort.Ints(generations)
+	logger.Printf("generations int: %v", generations)
+	return generations[len(generations)-1]
+}
+
+func (fm *FileManager) NewScriptFile() *os.File {
+	highestId := fm.ScriptIds[len(fm.ScriptIds)-1]
+	highestId++
+
+	path := fmt.Sprintf("scenario/%s/gen_%d/scripts/%d.l", fm.Scenario, fm.Generation, highestId)
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0644)
+	if err != nil {
+		logger.Fatalf("Can't open new script file %v: %v", path, err)
+	}
+
+	fm.ScriptIds = append(fm.ScriptIds, highestId)
+	return f
 }
 
 func (fm *FileManager) LoadScript(state *GameState, id int) Script {
@@ -33,7 +102,6 @@ func (fm *FileManager) LoadScript(state *GameState, id int) Script {
 
 	return Script{ParseScript(string(source)), state}
 }
-
 
 // X,Y (1 byte each), then moves, shots, kills, waits at 4 bytes each. Actual size will be packed smaller.
 const MAX_BYTES_PER_CELL = 2 + 4 + 4 + 4 + 4

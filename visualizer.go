@@ -12,7 +12,7 @@ import (
 )
 
 type Visualizer interface {
-	Init(state *GameState)         // Called when the game state is initialized
+	Init(state *GameState)     // Called when the game state is initialized
 	Update(action Action)      // Called once per action to tell the visualizer to record the current state
 	Finish(outputPath string)  // Writes the entire story to a file
 }

@@ -105,11 +105,11 @@ Command line: the scenario name, the action to take.
 
 Actions:
 
-`run <number of generations>`: runs the simulation for N generations
-`run-once <generation id>`: Runs the given generation
-`generate <generation id> <n>`: create N completely random new scripts
-`mutate <script id>`: mutate the given script in some small way
-`splice <id1> <id2>`: Cross-pollinate a random expression between two scripts in the same generation
+`run <scenario> <number of generations>`: runs the simulation for N generations
+`run-once <scenario>`: Runs the given generation
+`generate <scenario> <generation> <n>`: create N completely random new scripts
+`mutate <scenario> <generation> <script id>`: mutate the given script in some small way
+`splice <scenario> <generation> <id1> <id2>`: Cross-pollinate a random expression between two scripts in the same generation
 
 
 ## Output

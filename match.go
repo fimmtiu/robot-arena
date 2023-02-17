@@ -74,6 +74,10 @@ func (m *Match) RunTick() bool {
 	}
 
 	m.State.Tick++
+	if m.State.Tick >= MAX_TICKS_PER_GAME {  // Penalize both teams if the game runs too long.
+		m.Scores[TeamA] -= 5
+		m.Scores[TeamB] -= 5
+	}
 	return m.State.IsGameOver()
 }
 
@@ -88,7 +92,6 @@ func (m *Match) RunOneBot(bot *Bot) {
 	case ActionShoot:
 		m.BotShoot(bot, action.Target)
 	}
-	//   update score?
 
 	if m.Visualizer != nil {
 		m.Visualizer.Update(action)
