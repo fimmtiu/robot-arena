@@ -52,6 +52,14 @@ func BresenhamLine(x0, y0, x1, y1 int, callback func(x, y int) bool) bool {
 	return true
 }
 
+func intAbs(n int) int {
+	if n < 0 {
+		return -n
+	} else {
+		return n
+	}
+}
+
 // Each team considers "north" to be the direction of the enemy's goal, and "south" to be the direction of its own side.
 // This, plus the horizontal and vertical symmetry of the map, allows a script to run identically regardless of whether
 // it's controlling Team A or Team B.

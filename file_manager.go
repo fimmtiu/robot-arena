@@ -94,7 +94,8 @@ func (fm *FileManager) writeMatchOutcome(match *Match) error {
 		logger.Fatalf("Can't stat %s: %v", path, err)
 	}
 
-	row := fmt.Sprintf("%d,%d,%d,%d,%d,%d\n", match.Id, match.ScriptA, match.ScriptB, match.ScoreA, match.ScoreB, match.State.Tick)
+	row := fmt.Sprintf("%d,%d,%d,%d,%d,%d\n", match.Id, match.ScriptA, match.ScriptB,
+											match.Scores[TeamA], match.Scores[TeamB], match.State.Tick)
 	written, err := file.WriteString(row)
 	if err != nil {
 		logger.Fatalf("Couldn't write %d characters to %s: %v", len(row), path, err)

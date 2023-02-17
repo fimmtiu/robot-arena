@@ -152,60 +152,13 @@ func (a *Arena) calculateVisibility() {
 	logger.Printf("Created %d cell visibility links for %d cells.", visibleCells, len(a.Cells))
 }
 
-func intAbs(n int) int {
-	if n < 0 {
-		return -n
-	} else {
-		return n
-	}
-}
-
-// Returns the first cell for which `test` returns true, or `nil` if none match.
-func (a *Arena) TraceLine(x0, y0, x1, y1 int, test func(c *Cell) bool) *Cell {
-	var dx, dy, sx, sy, error int
-
-	dx = intAbs(x1 - x0)
-	if x0 < x1 {
-		sx = 1
-	} else {
-		sx = -1
-	}
-	dy = intAbs(y1 - y0)
-	if y0 < y1 {
-		sy = 1
-	} else {
-		sy = -1
-	}
-	error = dx + dy
-
-	for {
-		cell := &a.Cells[x0 * a.Height + y0]
-		if test(cell) {
-			return cell
-		}
-
-		if x0 == x1 && y0 == y1 {
-			break
-		}
-
-		e2 := 2 * error
-		if e2 >= dy {
-			if x0 == x1 {
-				break
-			}
-			error += dy
-			x0 += sx
-		}
-		if e2 <= dx {
-			if y0 == y1 {
-				break
-			}
-			error += dx
-			y0 += sy
+func (a *Arena) CanSee(src *Cell, dest *Cell) bool {
+	for _, cell := range src.VisibleCells {
+		if cell == dest {
+			return true
 		}
 	}
-
-	return nil
+	return false
 }
 
 func (a *Arena) Reset() {

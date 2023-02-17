@@ -1,5 +1,7 @@
 package main
 
+import "math/rand"
+
 type Direction int
 const (
 	North Direction = iota
@@ -44,13 +46,13 @@ type GameState struct {
 }
 
 type Match struct {
+	Rand *rand.Rand
 	State *GameState
 	Visualizer Visualizer
 	Id int
 	ScriptA int
 	ScriptB int
-	ScoreA int
-	ScoreB int
+	Scores [2]int
 }
 
 var currentMatch *Match
@@ -58,8 +60,9 @@ var turnSequence = []int{0, 5, 1, 6, 2, 7, 3, 8, 4, 9}  // Alternates bots from 
 
 func NewMatch(arena *Arena, visualizer Visualizer, id int, scriptId_A int, scriptId_B int) *Match {
 	arena.Reset()
+	rng := rand.New(rand.NewSource(int64(id)))
 	state := &GameState{arena, make([]Bot, BOTS_PER_TEAM * 2), [2]Goal{}, nil, 0}
-	match := &Match{state, visualizer, id,  scriptId_A, scriptId_B, 0, 0}
+	match := &Match{rng, state, visualizer, id,  scriptId_A, scriptId_B, [2]int{0, 0}}
 
 	scriptA := fileManager.LoadScript(state, scriptId_A)
 	scriptB := fileManager.LoadScript(state, scriptId_B)
@@ -116,7 +119,7 @@ func (m *Match) RunOneBot(bot *Bot) {
 	case ActionMove:
 		m.BotMove(bot, action.Target)
 	case ActionShoot:
-		// m.BotShoot(bot,
+		m.BotShoot(bot, action.Target)
 	}
 	//   update cell statistics?
 	//   update score?
@@ -140,6 +143,30 @@ func (m *Match) BotMove(bot *Bot, destination *Cell) {
 	}
 
 	bot.Position = destination
+}
+
+func (m *Match) BotShoot(bot *Bot, target *Cell) {
+	if m.Rand.Float32() <= 0.7 {  // FIXME: For now, let's just give them a 70% chance of hitting.
+		targetBot := m.BotAtCell(target)
+		targetBot.Alive = false
+		targetBot.Position.Kills++
+		if targetBot.Team == bot.Team {
+			m.Scores[bot.Team] -= 2  // penalty for friendly fire
+		} else {
+			m.Scores[bot.Team] += 1
+		}
+	}
+
+	bot.Position.Shots++
+}
+
+func (m *Match) BotAtCell(cell *Cell) *Bot {
+	for i, bot := range m.State.Bots {
+		if bot.Position == cell {
+			return &m.State.Bots[i]
+		}
+	}
+	return nil
 }
 
 func (m *Match) IsGameOver() bool {
