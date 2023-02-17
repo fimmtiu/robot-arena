@@ -1,12 +1,13 @@
 # Robot Arena
 
-A testbed for genetic algorithms where two teams of robots fight to win a laser tag-style game.
+An exercise in genetic programming where two teams of robots fight to win a laser tag-style game. Each team is
+controlled by a randomly generated snippet of code. Snippets of code that are successful get mutated and spliced with
+other code to create variants, and then those variants are pitted against each other. Eventually the robots should
+evolve useful pathfinding and combat behaviours.
 
 ## Basic concepts
 
-**Arena:** The robots are in a grid-based arena with walls that block line of sight and some weapons. The arena must be
-horizontally and vertically symmetrical, because we want the scripts to execute identically regardless of which side of
-the arena the team starts on. All
+**Arena:** The robots are in a grid-based arena with walls that block line of sight and laser fire.
 
 **Scoring:** Each team has a **goal** object on their side of the arena. If it's destroyed, they instantly lose. Scoring
 is as follows:
@@ -18,121 +19,130 @@ is as follows:
 * Game ends because the enemy's goal is destroyed: +10 points to the winners
 * Game ends because you blew up your own goal: -20 points to the losers
 
-The score can be used as the main fitness criterion.
+The score is the fitness criterion for the gene splicer; scripts which consistently score higher than others will be
+promoted to future generations.
 
 **Robots:** Each team has five robots. They can move in orthogonal directions. They can shoot at each other with lasers
-that are not 100% accurate; they get more accurate the longer the bot stands still, and less accurate the more often
-they fire. The lasers have a cooldown if they get fired too often.
+that are not 100% accurate; the chance to hit decreases sharply with distance from the target. Robots only have one hit
+point, so a single laser hit will knock them out.
 
-For now they'll have only one hit point and be omnidirectional turrets.
+At present there's no concept of facing, so a robot can see and fire in any direction. I'm strongly considering adding
+a cooldown so that you can only fire every other turn, or maybe every three turns.
 
-Idea for later: Add rockets. Each robot has one rocket. It explodes when it hits an obstacle, destroying all
-non-boundary walls, robots, and goal objects within its radius. Destructible terrain would change things up in an
-interesting way.
+**Time:** Each robot can take one action (move, shoot, wait) per tick of the simulation. A game that hasn't completed
+after 2,000 ticks ends automatically because the robots are probably just stuck in corners running into walls like
+idiots.
 
-Possibilities: Hit points for robots, so they can take multiple laser hits? Facing, so they can only see and fire in a
-certain arc in front of them?
+## Scripting language
 
-**Time:** I had plans to make a more complicated real-time thing, but let's just make it turn-based for now. Each robot
-can take one action (move, shoot, wait, etc.) per tick of the simulation. A game that hasn't completed after 2,000 ticks
-ends automatically because the robots are probably just stuck in corners running into walls like idiots.
+The language which the robot-controlling scripts are written in is a lobotomized little Lisp I call RoboScript. There's
+only a single type: integers. For truthiness, zero is false and non-zero numbers are true. You can't define any new
+functions, and there are no variable-arity functions. All scripts **must** be deterministic, so that a game with the
+same starting conditions will always have the same results.
 
-## Script components
+Directions are represented as integers:
+0. North
+1. South
+2. East
+3. West
 
-We want to reduce the language down to a single type: integers. No booleans, coordinate pairs, floats, etc. As such, all
-predicates will return 1 if true and 0 if false, and all conditionals will check for non-zero values.
+All directions are relative to the team's starting orientation. As far as the robot is concerned, the enemy's goal is
+north and its goal is south. This, plus the symmetrical arena, allows a script to work the same no matter which team
+it's controlling. If you pass a number outside of the range 0–3 to a direction-using function, it will do `direction %
+4` to turn it into a valid direction.
 
-All directions are relative to the team's starting orientation. The enemy's goal is north and your goal is south.
+(Note that the following list of functions is a work in progress. I'll probably need to do a lot of adjustment here,
+since the correct choice of language primitives makes a huge difference to the success of the genetic process.)
 
 ### Language primitives
 
-`if`, `and`, `or`, `not`. Like the standard primitives, but they check if something is non-zero rather than true.
+`(if condition true-expression false-expression)`: Your basic conditional.
+`(and expr expr)`: Returns the value of the last expression if both are true, or `0` if false.
+`(or expr expr)`: Returns the value of the first true expression, or `0` if neither are true.
+`(not expr)`: Returns `0` if `expr` is true and `1` if it's false.
 
 ### Predicates
 
-`north?`: True if the north cell is empty
-`south?`: True if the south cell is empty
-`east?`: True if the east cell is empty
-`west?`: True if the west cell is empty
-`can-fire?`: True if your laser isn't overheated
-`enemy-visible?`: True if any enemy robot is within sight
-`enemy-goal-visible?`: True if the enemy's goal is within sight
-`own-goal-visible?`: True if your own goal is within sight
+`(> a b)`: True if `a` is greater than `b`.
+`(< a b)`: True if `a` is less than `b`.
+`(= a b)`: True if `a` is equal to `b`.
+`(can-move? direction)`: True if the space in that direction is empty (no walls, goals, or bots).
+`(enemy-visible?)`: True if any enemy robot is within sight.
+`(enemy-goal-visible?)`: True if the enemy's goal is within sight.
+`(own-goal-visible?)`: True if your own goal is within sight.
 
 ### Actions
 
-All actions change the unit's accuracy penalty. Shooting increases the penalty, up to a certain maximum. Waiting or moving
-lowers it closer to 0 (waiting moreso than moving). This is intended to make "static turret" behaviour less likely to
-evolve.
-
-Ideas: Base chance to hit is 100% - (target_distance * 5). Each shot adds +10% miss chance, up to +50%.
-All games should be seeded with the run number.
-
-`(go n)`: N represents a direction: 1 = north, 2 = east, 3 = south, 4 = west.
-`(go-north)`: Move one cell to the north. Returns 1 if successful and 0 if you hit an obstacle.
-`(go-south)`: Move one cell to the south. Returns 1 if successful and 0 if you hit an obstacle.
-`(go-east)`: Move one cell to the east. Returns 1 if successful and 0 if you hit an obstacle.
-`(go-west)`: Move one cell to the west. Returns 1 if successful and 0 if you hit an obstacle.
-`(wait)`: Do nothing.
-`(shoot-nearest)`: Fire a laser at the nearest enemy or goal. Returns 1 if successful and 0 if your laser is overheated or there's nobody in sight.
-`(shoot-random)`: Fire a laser at a random enemy or goal. Returns 1 if successful and 0 if your laser is overheated or there's nobody in sight.
+`(move direction)`: If the indicated space is empty, moves the bot there; if not, same as `wait`.
+`(wait)`: Do nothing for one tick.
+`(shoot-nearest)`: Fire a laser at the nearest enemy or goal. Returns 1 if successful and 0 if there's nobody in sight.
 
 ### Math
 
-`(+ int int)`
-`(- int int)`
-`(* int int)`
-`(/ int int)`  (note: integer division only.)
-`(% int int)`
-`>`
-`<`
-`=`
+`(+ n n)`
+`(- n n)`
+`(* n n)`
+`(/ n n)`  (note: integer division only.)
+`(mod n n)`
 
-
+To do: integer negation? absolute value?
 
 ### Other functions
 
-`(tick)`: The tick number. Starts at 0, goes up to 2,000 or so.
-`(nearest-visible-enemy)`: The id of the nearest visible enemy robot in range
-`(number-of-visible-enemies)`: The number of visible enemies
-`(my-x-pos)`: The X coordinate of the current unit (rotated relative to the team's NSEW orientation)
-`(my-y-pos)`: The Y coordinate of the current unit (rotated relative to the team's NSEW orientation)
-
+`(tick)`: How many ticks have passed since the start of the game.
+`(number-of-visible-enemies)`: The number of enemies in this robot's field of view.
+`(my-x-pos)`: The robot's X coordinate (rotated relative to the team's orientation)
+`(my-y-pos)`: The robot's Y coordinate (rotated relative to the team's orientation)
 
 ## Input
 
-Command line: the scenario name, the action to take.
+### Command-line syntax
 
-Actions:
+A "scenario" is a single sequence of generations, starting from complete randomness and hopefully ending in something interesting.
 
-`run <scenario> <number of generations>`: runs the simulation for N generations
-`run-once <scenario>`: Runs the given generation
-`generate <scenario> <generation> <n>`: create N completely random new scripts
-`mutate <scenario> <generation> <script id>`: mutate the given script in some small way
-`splice <scenario> <generation> <id1> <id2>`: Cross-pollinate a random expression between two scripts in the same generation
+`run <scenario> <number of generations>`: Runs the simulation for N generations.
+`view <scenario> <generation> <match>`: Runs the given match and outputs the result to GIF and MP4.
 
+### Arena map
+
+The pixels in the arena map at `arena.png` have the following meanings:
+
+`#000000`: Black, a wall
+`#ffffff`: White, open space
+`#ff0000`: Red, a spawn point for Team A (counts as open space)
+`#ff0100`: Red, a spawn point for Team B (counts as open space)
+`#00ff00`: Green, goal for Team A
+`#01ff00`: Green, goal for Team B
+
+If you want to edit the map, be sure that it remains symmetrical! Otherwise you'll get inconsistent results.
 
 ## Output
 
-On screen: Update terminal output once per second with:
-  * Game number in this generation, out of total
-  * Score for each team
+We'll also write machine-readable statistics to a couple of files after each match.
 
-When a game ends, terminal output for the final score.
+### Cell statistics
 
-Files:
+After a match, we record per-cell statistics in a binary file called ``scenario/<name>/<gen>/cells`. For each cell, it records:
+* The number of times a robot moved into the cell
+* The number of times a robot shot while standing on the cell
+* The number of times a robot was killed on the cell
+* The number of times a robot waited on the cell
 
-`scenario/foo/gen_1/cells`: A file containing a series of these binary packed structures:
-  * First two bits: type (move, shoot, kill)
-  * 7 bits: x coord
-  * 7 bits: y coord
-  * 2 bytes: Number of events
+I plan to create a tool later which will sum the results for all matches in a generation and visualize them as heatmaps
+superimposed over the arena, so one can see at a glance how successful a given generation has been.
 
-Each complete game will emit one record of each type for each non-zero square on the board. (Only record successful
-moves, not bumping-into-wall failures.)
+### Generation results
 
-`scenario/foo/gen_1/results`: A CSV file with the following header:
+We track the progress of each generation in a file called `results.csv` in that generation's folder. It tracks the
+following data points, one row per match:
 
-generation,matchId,scriptA,scriptB,scoreA,scoreB,ticks
+`matchId,scriptA,scriptB,scoreA,scoreB,ticks`
 
-`scenario/foo/gen_1/scripts/1.l`: A file of auto-generated RoboScript code.
+* `matchId`: A unique identifier for the match
+* `scriptA`: The unique identifier of the script file that Team A was using
+* `scriptB`: The unique identifier of the script file that Team B was using
+* `scoreA`: The final score for Team A
+* `scoreB`: The final score for Team B
+* `ticks`: How many ticks elapsed between the start and end of the match
+
+We'll use these results to decide which scripts get spliced and mutated for the next generation.
