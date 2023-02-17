@@ -43,10 +43,13 @@ functions, and there are no variable-arity functions. All scripts **must** be de
 same starting conditions will always have the same results.
 
 Directions are represented as integers:
-0. North
-1. South
-2. East
-3. West
+
+```
+North = 0
+South = 1
+East = 2
+West = 3
+```
 
 All directions are relative to the team's starting orientation. As far as the robot is concerned, the enemy's goal is
 north and its goal is south. This, plus the symmetrical arena, allows a script to work the same no matter which team
@@ -58,46 +61,46 @@ since the correct choice of language primitives makes a huge difference to the s
 
 ### Language primitives
 
-`(if condition true-expression false-expression)`: Your basic conditional.
-`(and expr expr)`: Returns the value of the last expression if both are true, or `0` if false.
-`(or expr expr)`: Returns the value of the first true expression, or `0` if neither are true.
-`(not expr)`: Returns `0` if `expr` is true and `1` if it's false.
+* `(if condition true-expression false-expression)`: Your basic conditional.
+* `(and expr expr)`: Returns the value of the last expression if both are true, or `0` if false.
+* `(or expr expr)`: Returns the value of the first true expression, or `0` if neither are true.
+* `(not expr)`: Returns `0` if `expr` is true and `1` if it's false.
 
 ### Predicates
 
-`(> a b)`: True if `a` is greater than `b`.
-`(< a b)`: True if `a` is less than `b`.
-`(= a b)`: True if `a` is equal to `b`.
-`(can-move? direction)`: True if the space in that direction is empty (no walls, goals, or bots).
-`(enemy-visible?)`: True if any enemy robot is within sight.
-`(enemy-goal-visible?)`: True if the enemy's goal is within sight.
-`(own-goal-visible?)`: True if your own goal is within sight.
+* `(> a b)`: True if `a` is greater than `b`.
+* `(< a b)`: True if `a` is less than `b`.
+* `(= a b)`: True if `a` is equal to `b`.
+* `(can-move? direction)`: True if the space in that direction is empty (no walls, goals, or bots).
+* `(enemy-visible?)`: True if any enemy robot is within sight.
+* `(enemy-goal-visible?)`: True if the enemy's goal is within sight.
+* `(own-goal-visible?)`: True if your own goal is within sight.
 
 ### Actions
 
 Calling one of these functions will immediately end the script and execute the action.
 
-`(move direction)`: If the indicated space is empty, moves the bot there; if not, same as `wait`.
-`(wait)`: Do nothing for one tick.
-`(shoot direction)`: Fire a laser in the given direction.
-`(shoot-nearest)`: Fire a laser at the nearest enemy or goal.
+* `(move direction)`: If the indicated space is empty, moves the bot there; if not, same as `wait`.
+* `(wait)`: Do nothing for one tick.
+* `(shoot direction)`: Fire a laser in the given direction.
+* `(shoot-nearest)`: Fire a laser at the nearest enemy or goal.
 
 ### Math
 
-`(+ n n)`
-`(- n n)`
-`(* n n)`
-`(/ n n)`  (note: integer division only.)
-`(mod n n)`
+* `(+ n n)`
+* `(- n n)`
+* `(* n n)`
+* `(/ n n)`  (note: integer division only.)
+* `(mod n n)`
 
 To do: integer negation? absolute value?
 
 ### Other functions
 
-`(tick)`: How many ticks have passed since the start of the game.
-`(number-of-visible-enemies)`: The number of enemies in this robot's field of view.
-`(my-x-pos)`: The robot's X coordinate (rotated relative to the team's orientation)
-`(my-y-pos)`: The robot's Y coordinate (rotated relative to the team's orientation)
+* `(tick)`: How many ticks have passed since the start of the game.
+* `(number-of-visible-enemies)`: The number of enemies in this robot's field of view.
+* `(my-x-pos)`: The robot's X coordinate (rotated relative to the team's orientation)
+* `(my-y-pos)`: The robot's Y coordinate (rotated relative to the team's orientation)
 
 ## Input
 
@@ -105,19 +108,19 @@ To do: integer negation? absolute value?
 
 A "scenario" is a single sequence of generations, starting from complete randomness and hopefully ending in something interesting.
 
-`run <scenario> <number of generations>`: Runs the simulation for N generations.
-`view <scenario> <generation> <match>`: Runs the given match and outputs the result to GIF and MP4.
+* `run <scenario> <number of generations>`: Runs the simulation for N generations.
+* `view <scenario> <generation> <match>`: Runs the given match and outputs the result to GIF and MP4.
 
 ### Arena map
 
 The pixels in the arena map at `arena.png` have the following meanings:
 
-`#000000`: Black, a wall
-`#ffffff`: White, open space
-`#ff0000`: Red, a spawn point for Team A (counts as open space)
-`#ff0100`: Red, a spawn point for Team B (counts as open space)
-`#00ff00`: Green, goal for Team A
-`#01ff00`: Green, goal for Team B
+* `#000000`: Black, a wall
+* `#ffffff`: White, open space
+* `#ff0000`: Red, a spawn point for Team A (counts as open space)
+* `#ff0100`: Red, a spawn point for Team B (counts as open space)
+* `#00ff00`: Green, goal for Team A
+* `#01ff00`: Green, goal for Team B
 
 If you want to edit the map, be sure that it remains symmetrical! Otherwise you'll get inconsistent results.
 
