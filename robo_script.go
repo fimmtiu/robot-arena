@@ -173,11 +173,20 @@ func InitScript() {
 
 	// Actions
 	functionLookupTable["move"] = Function{"move", 1, RS_Move}
+	functionLookupTable["wait"] = Function{"wait", 1, RS_Wait}
 	functionLookupTable["shoot-nearest"] = Function{"shoot-nearest", 0, RS_ShootNearest}
 
 	// Predicates
 	functionLookupTable["can-move?"] = Function{"can-move?", 1, RS_CanMove}
+	functionLookupTable["enemy-visible?"] = Function{"enemy-visible?", 1, RS_EnemyVisible}
+	functionLookupTable["enemy-goal-visible?"] = Function{"enemy-goal-visible?", 1, RS_EnemyGoalVisible}
+	functionLookupTable["own-goal-visible?"] = Function{"own-goal-visible?", 1, RS_OwnGoalVisible}
 
+	// Miscellaneous
+	functionLookupTable["tick"] = Function{"tick", 0, RS_Tick}
+	functionLookupTable["visible-enemy-count"] = Function{"visible-enemy-count", 0, RS_VisibleEnemyCount}
+	functionLookupTable["my-x-pos"] = Function{"my-x-pos", 0, RS_MyXPos}
+	functionLookupTable["my-y-pos"] = Function{"my-y-pos", 0, RS_MyYPos}
 }
 
 func ResolveFunction(name string) (Function, error) {
@@ -188,8 +197,8 @@ func ResolveFunction(name string) (Function, error) {
 	return function, nil
 }
 
-// "Functions" is a poor choice of name, since the functions are responsible for evaluating their own arguments. It's
-// more like a language that has only special forms.
+// "Functions" is a poor choice of name, since the functions are responsible for evaluating their own arguments.
+// It's more like a language that has only special forms.
 func RS_Add(s *Script, args []*ScriptNode) Result {
 	result1 := s.Eval(args[0])
 	if result1.Type != ResultInt {
@@ -382,6 +391,10 @@ func RS_CanMove(s *Script, args []*ScriptNode) Result {
 	}
 }
 
+func RS_Wait(s *Script, args []*ScriptNode) Result {
+	return Result{Type: ResultAction, Action: Action{Type: ActionWait}}
+}
+
 func RS_ShootNearest(s *Script, args []*ScriptNode) Result {
 	nearestVisibleBot := s.State.NearestVisibleEnemy()
 	if nearestVisibleBot == nil {
@@ -389,4 +402,59 @@ func RS_ShootNearest(s *Script, args []*ScriptNode) Result {
 	}
 	action := Action{Type: ActionShoot, Target: nearestVisibleBot.Position}
 	return Result{Type: ResultAction, Action: action}
+}
+
+func RS_Tick(s *Script, args []*ScriptNode) Result {
+	return Result{Type: ResultInt, Int: s.State.Tick}
+}
+
+func RS_EnemyVisible(s *Script, args []*ScriptNode) Result {
+	if s.State.CountVisibleEnemies() > 0 { // This could be optimized to short-circuit if necessary.
+		return ResultTrue
+	} else {
+		return ResultFalse
+	}
+}
+
+func RS_VisibleEnemyCount(s *Script, args []*ScriptNode) Result {
+	return Result{Type: ResultInt, Int: s.State.CountVisibleEnemies()}
+}
+
+func RS_EnemyGoalVisible(s *Script, args []*ScriptNode) Result {
+	team := TeamA
+	if s.State.CurrentBot.Team == team {
+		team = TeamB
+	}
+	if s.State.GoalVisible(team) {
+		return ResultTrue
+	} else {
+		return ResultFalse
+	}
+}
+
+func RS_OwnGoalVisible(s *Script, args []*ScriptNode) Result {
+	if s.State.GoalVisible(s.State.CurrentBot.Team) {
+		return ResultTrue
+	} else {
+		return ResultFalse
+	}
+}
+
+// We have to rotate it 90 degrees so that X increasing is consistently east and Y increasing is consistently south, no matter which team you're on. (Yes, it's confusing. Imagine it from the perspective of the bot, looking towards the enemy goal.)
+func RS_MyXPos(s *Script, args []*ScriptNode) Result {
+	pos := s.State.CurrentBot.Position.Y
+	if s.State.CurrentBot.Team == TeamA {
+		return Result{Type: ResultInt, Int: pos}
+	} else {
+		return Result{Type: ResultInt, Int: s.State.Arena.Height - pos}
+	}
+}
+
+func RS_MyYPos(s *Script, args []*ScriptNode) Result {
+	pos := s.State.CurrentBot.Position.X
+	if s.State.CurrentBot.Team == TeamA {
+		return Result{Type: ResultInt, Int: pos}
+	} else {
+		return Result{Type: ResultInt, Int: s.State.Arena.Width - pos}
+	}
 }

@@ -122,7 +122,9 @@ func (m *Match) BotMove(bot *Bot, destination *Cell) {
 }
 
 func (m *Match) BotShoot(bot *Bot, target *Cell) {
-	if m.Rand.Float32() <= 0.7 {  // FIXME: For now, let's just give them a 70% chance of hitting.
+	// Accuracy falls off pretty severely with distance. Will need to adjust this eventually.
+	hitChance := 1.0 - (float32(m.State.Arena.Distance(bot.Position, target)) * 0.05)
+	if m.Rand.Float32() <= hitChance {
 		targetBot := m.State.BotAtCell(target)
 		if targetBot != nil {
 			targetBot.Alive = false

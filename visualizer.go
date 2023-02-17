@@ -79,11 +79,11 @@ func (vis *GifVisualizer) Finish() {
 	}
 
 	logger.Printf("Creating output MP4...")
-	ffmpegCommand := fmt.Sprintf("ffmpeg -framerate 30 -pattern_type glob -i '%s/frame_*.png' -c:v libx264 -pix_fmt yuv420p %s/game.mp4", vis.Dir, fileManager.GenerationDir())
+	ffmpegCommand := fmt.Sprintf("ffmpeg -y -framerate 30 -pattern_type glob -i '%s/frame_*.png' -c:v libx264 -pix_fmt yuv420p %s/game.mp4", vis.Dir, fileManager.GenerationDir())
 	cmd = exec.Command("/bin/sh", "-c", ffmpegCommand)
 	err = cmd.Run()
 	if err != nil {
-		logger.Fatalf("Failed to run 'convert': %v", err)
+		logger.Fatalf("Failed to run 'ffmpeg': %v", err)
 	}
 
 	if err := os.RemoveAll(vis.Dir); err != nil {
