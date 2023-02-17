@@ -5,7 +5,7 @@ import (
 	"image"
 	"image/color"
 	"image/draw"
-	"image/gif"
+	"image/png"
 	"os"
 	"os/exec"
 	"time"
@@ -32,8 +32,6 @@ type GifVisualizer struct {
 }
 
 const GIF_SCALE = 16
-const NUM_COLORS = 256 // FIXME: Look into how to reduce this without the palettizing breaking everything.
-// (I think we'd have to create a custom palette and pass it in.)
 
 func NewGifVisualizer() *GifVisualizer {
 	dir := fmt.Sprintf("/tmp/robot-arena-%d-%d", os.Getpid(), time.Now().UnixNano())
@@ -93,19 +91,19 @@ func (vis *GifVisualizer) Update(action Action) {
 		}
 	}
 
-	path := fmt.Sprintf("%s/frame_%d.gif", vis.Dir, vis.NextFileIndex)
+	path := fmt.Sprintf("%s/frame_%d.png", vis.Dir, vis.NextFileIndex)
 	vis.NextFileIndex++
 
 	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		logger.Fatalf("Can't open file %s: %v", path, err)
 	}
-	gif.Encode(f, frame, &gif.Options{NumColors: NUM_COLORS})
+	png.Encode(f, frame)
 	f.Close()
 }
 
 func (vis *GifVisualizer) Finish(outputPath string) {
-	convertCommand := fmt.Sprintf("convert -delay 100 -loop 0 %s/*.gif %s", vis.Dir, outputPath)
+	convertCommand := fmt.Sprintf("convert -delay 100 -loop 0 %s/*.png %s", vis.Dir, outputPath)
 	cmd := exec.Command("/bin/sh", "-c", convertCommand)
 	err := cmd.Run()
 	if err != nil {
