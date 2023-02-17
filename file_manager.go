@@ -24,12 +24,11 @@ var generationRegexp = regexp.MustCompile(`/gen_(\d+)$`)
 func NewFileManager(scenario string, generation int) *FileManager {
 	fm := &FileManager{scenario, generation, make([]int, SCRIPTS_PER_GENERATION)}
 
-	path := fmt.Sprintf("scenario/%s/gen_%d/scripts", scenario, generation)
-	if err := os.MkdirAll(path, 0755); err != nil {
-		logger.Fatalf("Failed to create directory %s: %v", path, err)
+	if err := os.MkdirAll(fm.ScriptsDir(), 0755); err != nil {
+		logger.Fatalf("Failed to create directory %s: %v", fm.ScriptsDir(), err)
 	}
 
-	pattern := fmt.Sprintf("scenario/%s/gen_%d/scripts/*", fm.Scenario, fm.Generation)
+	pattern := fm.ScriptsDir() + "/*"
 	filenames, err := filepath.Glob(pattern)
 	if err != nil {
 		logger.Fatalf("Can't glob %s: %v", pattern, err)
@@ -52,9 +51,17 @@ func NewFileManager(scenario string, generation int) *FileManager {
 	return fm
 }
 
-func currentHighestGeneration(scenario string) int {
+func (fm *FileManager) GenerationDir() string {
+	return fmt.Sprintf("scenario/%s/gen_%d", fm.Scenario, fm.Generation)
+}
+
+func (fm *FileManager) ScriptsDir() string {
+	return fmt.Sprintf("scenario/%s/gen_%d/scripts", fm.Scenario, fm.Generation)
+}
+
+func (fm *FileManager) currentHighestGeneration() int {
 	generations := []int{}
-	pattern := fmt.Sprintf("scenario/%s/gen_*", scenario)
+	pattern := fmt.Sprintf("scenario/%s/gen_*", fm.Scenario)
 	dirnames, err := filepath.Glob(pattern)
 	if err != nil {
 		logger.Fatalf("Can't glob %s: %v", pattern, err)
@@ -83,7 +90,7 @@ func (fm *FileManager) NewScriptFile() *os.File {
 	highestId := fm.ScriptIds[len(fm.ScriptIds)-1]
 	highestId++
 
-	path := fmt.Sprintf("scenario/%s/gen_%d/scripts/%d.l", fm.Scenario, fm.Generation, highestId)
+	path := fmt.Sprintf("%s/%d.l", fm.ScriptsDir(), highestId)
 	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0644)
 	if err != nil {
 		logger.Fatalf("Can't open new script file %v: %v", path, err)
@@ -94,7 +101,7 @@ func (fm *FileManager) NewScriptFile() *os.File {
 }
 
 func (fm *FileManager) LoadScript(state *GameState, id int) Script {
-	path := fmt.Sprintf("scenario/%s/gen_%d/scripts/%d.l", fm.Scenario, fm.Generation, id)
+	path := fmt.Sprintf("%s/%d.l", fm.ScriptsDir(), id)
 	source, err := os.ReadFile(path)
 	if err != nil {
 		logger.Fatalf("Couldn't read script %s: %v", path, err)

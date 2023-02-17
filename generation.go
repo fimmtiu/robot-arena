@@ -1,3 +1,5 @@
+// That's "generation" as in a cohort of a particular age, not as in "the act of generating stuff".
+
 package main
 
 type Generation struct {

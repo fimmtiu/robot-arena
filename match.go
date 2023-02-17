@@ -1,6 +1,8 @@
 package main
 
-import "math/rand"
+import (
+	"math/rand"
+)
 
 type Direction int
 const (
@@ -62,6 +64,10 @@ func NewMatch(arena *Arena, visualizer Visualizer, id int, scriptId_A int, scrip
 		state.Bots[i].Script = scripts[bot.Team]
 	}
 
+	if visualizer != nil {
+		visualizer.Init(state)
+	}
+
 	return match
 }
 
@@ -73,12 +79,22 @@ func (m *Match) RunTick() bool {
 		}
 	}
 
+	if m.Visualizer != nil {
+		m.Visualizer.TickComplete()
+	}
 	m.State.Tick++
 	if m.State.Tick >= MAX_TICKS_PER_GAME {  // Penalize both teams if the game runs too long.
 		m.Scores[TeamA] -= 5
 		m.Scores[TeamB] -= 5
 	}
-	return m.State.IsGameOver()
+
+	if m.State.IsGameOver() {
+		if m.Visualizer != nil {
+			m.Visualizer.Finish()
+		}
+		return true
+	}
+	return false
 }
 
 func (m *Match) RunOneBot(bot *Bot) {

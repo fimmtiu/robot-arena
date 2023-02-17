@@ -14,7 +14,8 @@ import (
 type Visualizer interface {
 	Init(state *GameState)     // Called when the game state is initialized
 	Update(action Action)      // Called once per action to tell the visualizer to record the current state
-	Finish(outputPath string)  // Writes the entire story to a file
+	TickComplete()             // Called at the end of a tick, once all robots have taken a turn
+	Finish()                   // Cleans up and writes whatever output is required
 }
 
 type GifVisualizer struct {
@@ -51,6 +52,46 @@ func (vis *GifVisualizer) Init(state *GameState) {
 }
 
 func (vis *GifVisualizer) Update(action Action) {
+	// If this is the first action of the game, write a tick image showing the initial game state.
+	if vis.NextFileIndex == 0 {
+		path := fmt.Sprintf("%s/tick_%05d.png", vis.Dir, 0)
+		vis.writePng(Action{Type: ActionWait}, path)
+	}
+
+	// The names have to be lexicographically sorted so that they're assembled in the right order.
+	path := fmt.Sprintf("%s/frame_%010d.png", vis.Dir, vis.NextFileIndex)
+	vis.NextFileIndex++
+	vis.writePng(action, path)
+}
+
+func (vis *GifVisualizer) TickComplete() {
+	path := fmt.Sprintf("%s/tick_%05d.png", vis.Dir, vis.State.Tick + 1)
+	vis.writePng(Action{Type: ActionWait}, path)
+}
+
+func (vis *GifVisualizer) Finish() {
+	logger.Printf("Creating output GIF...")
+	convertCommand := fmt.Sprintf("convert -delay 20 -loop 0 %s/tick_*.png %s/game.gif", vis.Dir, fileManager.GenerationDir())
+	cmd := exec.Command("/bin/sh", "-c", convertCommand)
+	err := cmd.Run()
+	if err != nil {
+		logger.Fatalf("Failed to run 'convert': %v", err)
+	}
+
+	logger.Printf("Creating output MP4...")
+	ffmpegCommand := fmt.Sprintf("ffmpeg -framerate 30 -pattern_type glob -i '%s/frame_*.png' -c:v libx264 -pix_fmt yuv420p %s/game.mp4", vis.Dir, fileManager.GenerationDir())
+	cmd = exec.Command("/bin/sh", "-c", ffmpegCommand)
+	err = cmd.Run()
+	if err != nil {
+		logger.Fatalf("Failed to run 'convert': %v", err)
+	}
+
+	if err := os.RemoveAll(vis.Dir); err != nil {
+		logger.Fatalf("Could not destroy temporary directory %s: %v", vis.Dir, err)
+	}
+}
+
+func (vis *GifVisualizer) writePng(action Action, outfile string) {
 	width := vis.State.Arena.Width
 	height := vis.State.Arena.Height
 	frame := image.NewRGBA(image.Rect(0, 0, width * GIF_SCALE, height * GIF_SCALE))
@@ -91,30 +132,12 @@ func (vis *GifVisualizer) Update(action Action) {
 		}
 	}
 
-	// The names have to be lexicographically sorted so that they're assembled in the right order.
-	path := fmt.Sprintf("%s/frame_%010d.png", vis.Dir, vis.NextFileIndex)
-	vis.NextFileIndex++
-
-	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0644)
+	f, err := os.OpenFile(outfile, os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
-		logger.Fatalf("Can't open file %s: %v", path, err)
+		logger.Fatalf("Can't open file %s: %v", outfile, err)
 	}
 	png.Encode(f, frame)
 	f.Close()
-}
-
-func (vis *GifVisualizer) Finish(outputPath string) {
-	logger.Printf("Creating output GIF...")
-	convertCommand := fmt.Sprintf("convert -delay 20 -loop 0 %s/*.png %s", vis.Dir, outputPath)
-	cmd := exec.Command("/bin/sh", "-c", convertCommand)
-	err := cmd.Run()
-	if err != nil {
-		logger.Fatalf("Failed to run 'convert': %v", err)
-	}
-
-	if err := os.RemoveAll(vis.Dir); err != nil {
-		logger.Fatalf("Could not destroy temporary directory %s: %v", vis.Dir, err)
-	}
 }
 
 // We pre-generate some solid color swatches so that we can copy them over in big rectangles instead of laboriously
