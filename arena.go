@@ -140,7 +140,8 @@ func (a *Arena) calculateVisibility() {
 
 		for j := 0; j < len(a.Cells); j++ {
 			otherCell := &a.Cells[j]
-			a.TraceLine(cell.X, cell.Y, otherCell.X, otherCell.Y, func (c *Cell) bool {
+			BresenhamLine(cell.X, cell.Y, otherCell.X, otherCell.Y, func (x, y int) bool {
+				c := &a.Cells[x * a.Height + y]
 				if c.BlocksVision() {
 					return false
 				} else {
