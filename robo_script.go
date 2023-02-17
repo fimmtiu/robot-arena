@@ -174,6 +174,7 @@ func InitScript() {
 	// Actions
 	functionLookupTable["move"] = Function{"move", 1, RS_Move}
 	functionLookupTable["wait"] = Function{"wait", 1, RS_Wait}
+	functionLookupTable["shoot"] = Function{"shoot", 1, RS_Shoot}
 	functionLookupTable["shoot-nearest"] = Function{"shoot-nearest", 0, RS_ShootNearest}
 
 	// Predicates
@@ -393,6 +394,24 @@ func RS_CanMove(s *Script, args []*ScriptNode) Result {
 
 func RS_Wait(s *Script, args []*ScriptNode) Result {
 	return Result{Type: ResultAction, Action: Action{Type: ActionWait}}
+}
+
+func RS_Shoot(s *Script, args []*ScriptNode) Result {
+	direction := s.Eval(args[0])
+	if direction.Type != ResultInt {
+		return direction
+	}
+
+	dir := relativeToActualDirection(Direction(direction.Int % int(NumberOfDirections)), s.State.CurrentBot.Team)
+	pos := s.State.CurrentBot.Position
+	var target *Cell
+	switch dir {
+	case North: target = &s.State.Arena.Cells[pos.X * s.State.Arena.Height]
+	case South: target = &s.State.Arena.Cells[pos.X * s.State.Arena.Height + s.State.Arena.Height - 1]
+	case East:  target = &s.State.Arena.Cells[(s.State.Arena.Width - 1) * s.State.Arena.Height + pos.Y]
+	case West:  target = &s.State.Arena.Cells[pos.Y]
+	}
+	return Result{Type: ResultAction, Action: Action{Type: ActionShoot, Target: target}}
 }
 
 func RS_ShootNearest(s *Script, args []*ScriptNode) Result {

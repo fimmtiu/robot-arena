@@ -9,7 +9,7 @@ evolve useful pathfinding and combat behaviours.
 
 **Arena:** The robots are in a grid-based arena with walls that block line of sight and laser fire.
 
-**Scoring:** Each team has a **goal** object on their side of the arena. If it's destroyed, they instantly lose. Scoring
+**Scoring:** Each team has a goal object on their side of the arena. If it's destroyed, they instantly lose. Scoring
 is as follows:
 
 * Killed a robot from the opposing team: +1 point
@@ -73,9 +73,12 @@ since the correct choice of language primitives makes a huge difference to the s
 
 ### Actions
 
+Calling one of these functions will immediately end the script and execute the action.
+
 `(move direction)`: If the indicated space is empty, moves the bot there; if not, same as `wait`.
 `(wait)`: Do nothing for one tick.
-`(shoot-nearest)`: Fire a laser at the nearest enemy or goal. Returns 1 if successful and 0 if there's nobody in sight.
+`(shoot direction)`: Fire a laser in the given direction.
+`(shoot-nearest)`: Fire a laser at the nearest enemy or goal.
 
 ### Math
 

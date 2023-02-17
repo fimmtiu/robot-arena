@@ -105,7 +105,7 @@ func (m *Match) RunOneBot(bot *Bot) {
 	case ActionMove:
 		m.BotMove(bot, action.Target)
 	case ActionShoot:
-		m.BotShoot(bot, action.Target)
+		m.BotShoot(bot, action)
 	}
 
 	if m.Visualizer != nil {
@@ -121,11 +121,17 @@ func (m *Match) BotMove(bot *Bot, destination *Cell) {
 	}
 }
 
-func (m *Match) BotShoot(bot *Bot, target *Cell) {
+// We shoot at the first non-empty cell along the line between you and the target.
+func (m *Match) BotShoot(bot *Bot, action Action) {
+	// We modify the action so that the visualizer will later know which target was actually hit.
+	action.Target = m.State.FirstNonEmptyCellOnLine(bot.Position, action.Target)
+
 	// Accuracy falls off pretty severely with distance. Will need to adjust this eventually.
-	hitChance := 1.0 - (float32(m.State.Arena.Distance(bot.Position, target)) * 0.05)
+	hitChance := 1.0 - (float32(m.State.Arena.Distance(bot.Position, action.Target)) * 0.05)
 	if m.Rand.Float32() <= hitChance {
-		targetBot := m.State.BotAtCell(target)
+		targetBot := m.State.BotAtCell(action.Target)
+		targetGoal := m.State.GoalAtCell(action.Target)
+
 		if targetBot != nil {
 			targetBot.Alive = false
 			targetBot.Position.Kills++
@@ -134,12 +140,7 @@ func (m *Match) BotShoot(bot *Bot, target *Cell) {
 			} else {
 				m.Scores[bot.Team] += 1
 			}
-
-		} else {
-			targetGoal := m.State.GoalAtCell(target)
-			if targetGoal == nil {
-				logger.Fatalf("Fired at an empty cell? %v", target)
-			}
+		} else if targetGoal != nil {
 			targetGoal.Alive = false
 			if targetBot.Team == bot.Team {
 				m.Scores[bot.Team] -= 20  // massive penalty for an own-goal
@@ -147,6 +148,7 @@ func (m *Match) BotShoot(bot *Bot, target *Cell) {
 				m.Scores[bot.Team] += 10
 			}
 		}
+		// Otherwise you probably shot a wall, so we do nothing.
 	}
 
 	bot.Position.Shots++

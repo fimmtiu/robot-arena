@@ -49,6 +49,20 @@ func (gs *GameState) GoalAtCell(cell *Cell) *Goal {
 	return nil
 }
 
+func (gs *GameState) FirstNonEmptyCellOnLine(src *Cell, dest *Cell) *Cell {
+	var found *Cell = nil
+
+	BresenhamLine(src.X, src.Y, dest.X, dest.Y, func(x, y int) bool {
+		c := &gs.Arena.Cells[x * gs.Arena.Height + y]
+		if !gs.CellIsEmpty(c) {
+			found = c
+			return false
+		}
+		return true
+	})
+	return found
+}
+
 func (gs *GameState) NearestVisibleEnemy() *Bot {
 	closestDistance := gs.Arena.Width * 100
 	var closestBot *Bot = nil
