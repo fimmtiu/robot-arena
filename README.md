@@ -5,6 +5,8 @@ controlled by a randomly generated snippet of code. Snippets of code that are su
 other code to create variants, and then those variants are pitted against each other. Eventually the robots should
 evolve useful pathfinding and combat behaviours.
 
+![GIF of the start of a game](./example_game_start.gif)
+
 ## Basic concepts
 
 **Arena:** The robots are in a grid-based arena with walls that block line of sight and laser fire.
