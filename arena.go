@@ -161,6 +161,11 @@ func (a *Arena) CanSee(src *Cell, dest *Cell) bool {
 	return false
 }
 
+// Manhattan distance between two points. Working with ints keeps things simple.
+func (a *Arena) Distance(src *Cell, dest *Cell) int {
+	return intAbs(src.X - dest.X) + intAbs(src.Y - dest.Y)
+}
+
 func (a *Arena) Reset() {
 	for i := 0; i < len(a.Cells); i++ {
 		a.Cells[i].Moves = 0

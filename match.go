@@ -22,7 +22,6 @@ const (
 
 type Action struct {
 	Type ActionType
-	Actor *Bot
 	Target *Cell
 }
 

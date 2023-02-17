@@ -173,6 +173,7 @@ func InitScript() {
 
 	// Actions
 	functionLookupTable["move"] = Function{"move", 1, RS_Move}
+	functionLookupTable["shoot-nearest"] = Function{"shoot-nearest", 0, RS_ShootNearest}
 
 	// Predicates
 	functionLookupTable["can-move?"] = Function{"can-move?", 1, RS_CanMove}
@@ -361,7 +362,7 @@ func RS_Move(s *Script, args []*ScriptNode) Result {
 
 	dir := relativeToActualDirection(Direction(direction.Int % int(NumberOfDirections)), s.State.CurrentBot.Team)
 	destination := s.State.Arena.DestinationCellAfterMove(s.State.CurrentBot.Position, dir)
-	return Result{Type: ResultAction, Action: Action{Type: ActionMove, Actor: s.State.CurrentBot, Target: destination}}
+	return Result{Type: ResultAction, Action: Action{Type: ActionMove, Target: destination}}
 }
 
 func RS_CanMove(s *Script, args []*ScriptNode) Result {
@@ -379,4 +380,13 @@ func RS_CanMove(s *Script, args []*ScriptNode) Result {
 		// logger.Printf("(can-move? %d) is false", dir)
 		return ResultFalse
 	}
+}
+
+func RS_ShootNearest(s *Script, args []*ScriptNode) Result {
+	nearestVisibleBot := s.State.NearestVisibleEnemy()
+	if nearestVisibleBot == nil {
+		return Result{Type: ResultAction, Action: Action{Type: ActionWait}}
+	}
+	action := Action{Type: ActionShoot, Target: nearestVisibleBot.Position}
+	return Result{Type: ResultAction, Action: action}
 }

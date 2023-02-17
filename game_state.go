@@ -49,6 +49,23 @@ func (gs *GameState) GoalAtCell(cell *Cell) *Goal {
 	return nil
 }
 
+func (gs *GameState) NearestVisibleEnemy() *Bot {
+	closestDistance := gs.Arena.Width * 100
+	var closestBot *Bot = nil
+
+	for i := range gs.Bots {
+		bot := &gs.Bots[i]
+		if gs.CurrentBot.Team != bot.Team && gs.Arena.CanSee(gs.CurrentBot.Position, bot.Position) {
+			distance := gs.Arena.Distance(gs.CurrentBot.Position, bot.Position)
+			if distance < closestDistance {
+				closestDistance = distance
+				closestBot = bot
+			}
+		}
+	}
+	return closestBot
+}
+
 func (gs *GameState) CellIsEmpty(cell *Cell) bool {
 	return cell.BotsCanPass() && gs.BotAtCell(cell) == nil
 }
