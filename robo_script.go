@@ -104,7 +104,7 @@ func readToken(code string) (*ScriptNode, string, error) {
 
 	} else if unicode.IsDigit(rune(code[0])) {
 		s := string(code[0])
-		for i := 1; i < len(code) - 1 && unicode.IsDigit(rune(code[i])); i++ {
+		for i := 1; i < len(code) - 1 && code[i] != ')' && unicode.IsDigit(rune(code[i])); i++ {
 			s += string(code[i])
 		}
 		var err error
@@ -117,7 +117,7 @@ func readToken(code string) (*ScriptNode, string, error) {
 
 	} else if !unicode.IsSpace(rune(code[0])) {
 		s := string(code[0])
-		for i := 1; i < len(code) - 1 && !unicode.IsSpace(rune(code[i])); i++ {
+		for i := 1; i < len(code) - 1 && code[i] != ')' && !unicode.IsSpace(rune(code[i])); i++ {
 			s += string(code[i])
 		}
 		node.Type = FuncName
@@ -173,14 +173,9 @@ func InitScript() {
 
 	// Actions
 	functionLookupTable["move"] = Function{"move", 1, RS_Move}
-	// functionLookupTable["go-north"] = Function{"go-north", 0, RS_GoNorth}
-	// functionLookupTable["go-south"] = Function{"go-south", 0, RS_GoSouth}
-	// functionLookupTable["go-east"] = Function{"go-east", 0, RS_GoEast}
-	// functionLookupTable["go-west"] = Function{"go-west", 0, RS_GoWest}
 
 	// Predicates
-	functionLookupTable["can-move?"] = Function{"can-move?", 1, RS_Move}
-	// functionLookupTable["north?"] = Function{"north?", 0, RS_North}
+	functionLookupTable["can-move?"] = Function{"can-move?", 1, RS_CanMove}
 
 }
 
@@ -358,39 +353,16 @@ func RS_Not(s *Script, args []*ScriptNode) Result {
 	}
 }
 
-// TODO: If we get rid of go-north, etc., then merge this back into RS_Move.
-func move(s *Script, dir Direction) Result {
-	dir = relativeToActualDirection(dir, s.State.CurrentBot.Team)
-	destination := s.State.Arena.DestinationCellAfterMove(s.State.CurrentBot.Position, dir)
-	return Result{Type: ResultAction, Action: Action{Type: ActionMove, Actor: s.State.CurrentBot, Target: destination}}
-}
-
 func RS_Move(s *Script, args []*ScriptNode) Result {
 	direction := s.Eval(args[0])
 	if direction.Type != ResultInt {
 		return direction
 	}
-	return move(s, Direction(direction.Int % int(NumberOfDirections)))
+
+	dir := relativeToActualDirection(Direction(direction.Int % int(NumberOfDirections)), s.State.CurrentBot.Team)
+	destination := s.State.Arena.DestinationCellAfterMove(s.State.CurrentBot.Position, dir)
+	return Result{Type: ResultAction, Action: Action{Type: ActionMove, Actor: s.State.CurrentBot, Target: destination}}
 }
-
-// It may be a bad idea to have these hard-coded directions in the scripts. Maybe I just want `move`, because I'll
-// probably get more interesting and complex behaviour that way.
-
-// func RS_GoNorth(s *Script, args []*ScriptNode) Result {
-// 	return move(s, North)
-// }
-
-// func RS_GoSouth(s *Script, args []*ScriptNode) Result {
-// 	return move(s, South)
-// }
-
-// func RS_GoEast(s *Script, args []*ScriptNode) Result {
-// 	return move(s, East)
-// }
-
-// func RS_GoWest(s *Script, args []*ScriptNode) Result {
-// 	return move(s, West)
-// }
 
 func RS_CanMove(s *Script, args []*ScriptNode) Result {
 	direction := s.Eval(args[0])
@@ -401,8 +373,10 @@ func RS_CanMove(s *Script, args []*ScriptNode) Result {
 	dir := relativeToActualDirection(Direction(direction.Int % int(NumberOfDirections)), s.State.CurrentBot.Team)
 	destination := s.State.Arena.DestinationCellAfterMove(s.State.CurrentBot.Position, dir)
 	if s.State.CellIsEmpty(destination) {
+		// logger.Printf("(can-move? %d) is true", dir)
 		return ResultTrue
 	} else {
+		// logger.Printf("(can-move? %d) is false", dir)
 		return ResultFalse
 	}
 }

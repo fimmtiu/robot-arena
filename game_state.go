@@ -31,16 +31,45 @@ func NewGameState(arena *Arena) *GameState {
 	return state
 }
 
-func (gs *GameState) CellIsEmpty(cell *Cell) bool {
-	if !cell.BotsCanPass() {
-		return false
-	}
-
-	for _, bot := range gs.Bots {
+func (gs *GameState) BotAtCell(cell *Cell) *Bot {
+	for i, bot := range gs.Bots {
 		if bot.Position == cell {
-			return false
+			return &gs.Bots[i]
+		}
+	}
+	return nil
+}
+
+func (gs *GameState) GoalAtCell(cell *Cell) *Goal {
+	for i, goal := range gs.Goals {
+		if goal.Position == cell {
+			return &gs.Goals[i]
+		}
+	}
+	return nil
+}
+
+func (gs *GameState) CellIsEmpty(cell *Cell) bool {
+	return cell.BotsCanPass() && gs.BotAtCell(cell) == nil
+}
+
+func (gs *GameState) IsGameOver() bool {
+	alive := [2]int{0, 0}
+	for _, bot := range gs.Bots {
+		if bot.Alive {
+			alive[bot.Team]++
 		}
 	}
 
-	return true
+	if alive[TeamA] == 0 || alive[TeamB] == 0 { // One team is wiped out
+		return true
+	}
+	if !gs.Goals[TeamA].Alive || !gs.Goals[TeamB].Alive { // A goal has been destroyed
+		return true
+	}
+	if gs.Tick >= MAX_TICKS_PER_GAME { // The game has run over the max allowed time
+		return true
+	}
+
+	return false
 }

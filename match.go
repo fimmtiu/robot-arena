@@ -74,7 +74,7 @@ func (m *Match) RunTick() bool {
 	}
 
 	m.State.Tick++
-	return m.IsGameOver()
+	return m.State.IsGameOver()
 }
 
 func (m *Match) RunOneBot(bot *Bot) {
@@ -88,7 +88,6 @@ func (m *Match) RunOneBot(bot *Bot) {
 	case ActionShoot:
 		m.BotShoot(bot, action.Target)
 	}
-	//   update cell statistics?
 	//   update score?
 
 	if m.Visualizer != nil {
@@ -106,45 +105,29 @@ func (m *Match) BotMove(bot *Bot, destination *Cell) {
 
 func (m *Match) BotShoot(bot *Bot, target *Cell) {
 	if m.Rand.Float32() <= 0.7 {  // FIXME: For now, let's just give them a 70% chance of hitting.
-		targetBot := m.BotAtCell(target)
-		targetBot.Alive = false
-		targetBot.Position.Kills++
-		if targetBot.Team == bot.Team {
-			m.Scores[bot.Team] -= 2  // penalty for friendly fire
+		targetBot := m.State.BotAtCell(target)
+		if targetBot != nil {
+			targetBot.Alive = false
+			targetBot.Position.Kills++
+			if targetBot.Team == bot.Team {
+				m.Scores[bot.Team] -= 2  // penalty for friendly fire
+			} else {
+				m.Scores[bot.Team] += 1
+			}
+
 		} else {
-			m.Scores[bot.Team] += 1
+			targetGoal := m.State.GoalAtCell(target)
+			if targetGoal == nil {
+				logger.Fatalf("Fired at an empty cell? %v", target)
+			}
+			targetGoal.Alive = false
+			if targetBot.Team == bot.Team {
+				m.Scores[bot.Team] -= 20  // massive penalty for an own-goal
+			} else {
+				m.Scores[bot.Team] += 10
+			}
 		}
 	}
 
 	bot.Position.Shots++
-}
-
-func (m *Match) BotAtCell(cell *Cell) *Bot {
-	for i, bot := range m.State.Bots {
-		if bot.Position == cell {
-			return &m.State.Bots[i]
-		}
-	}
-	return nil
-}
-
-func (m *Match) IsGameOver() bool {
-	alive := [2]int{0, 0}
-	for _, bot := range m.State.Bots {
-		if bot.Alive {
-			alive[bot.Team]++
-		}
-	}
-
-	if alive[TeamA] == 0 || alive[TeamB] == 0 { // One team is wiped out
-		return true
-	}
-	if !m.State.Goals[TeamA].Alive || !m.State.Goals[TeamB].Alive { // A goal has been destroyed
-		return true
-	}
-	if m.State.Tick >= MAX_TICKS_PER_GAME { // The game has run over the max allowed time
-		return true
-	}
-
-	return false
 }

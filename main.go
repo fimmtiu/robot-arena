@@ -37,4 +37,5 @@ func main() {
 	}
 
 	vis.Finish("/tmp/game.gif")
+	logger.Printf("Done!")
 }
