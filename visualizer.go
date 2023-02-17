@@ -62,11 +62,11 @@ func (vis *GifVisualizer) Update(action Action) {
 			cell := vis.State.Arena.Cells[x * height + y]
 			rect := image.Rect(x * GIF_SCALE, y * GIF_SCALE, (x + 1) * GIF_SCALE, (y + 1) * GIF_SCALE)
 			switch cell.Type {
-			case Wall:
+			case WallCell:
 				draw.Draw(frame, rect, vis.blackSquare, swatch.Min, draw.Src)
-			case Spawn, Open:
+			case SpawnCell, OpenCell:
 				draw.Draw(frame, rect, vis.whiteSquare, swatch.Min, draw.Src)
-			case Goal:
+			case GoalCell:
 				draw.Draw(frame, rect, vis.greenSquare, swatch.Min, draw.Src)
 			}
 		}
@@ -91,7 +91,8 @@ func (vis *GifVisualizer) Update(action Action) {
 		}
 	}
 
-	path := fmt.Sprintf("%s/frame_%d.png", vis.Dir, vis.NextFileIndex)
+	// The names have to be lexicographically sorted so that they're assembled in the right order.
+	path := fmt.Sprintf("%s/frame_%010d.png", vis.Dir, vis.NextFileIndex)
 	vis.NextFileIndex++
 
 	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0644)
@@ -103,6 +104,7 @@ func (vis *GifVisualizer) Update(action Action) {
 }
 
 func (vis *GifVisualizer) Finish(outputPath string) {
+	logger.Printf("Creating output GIF...")
 	convertCommand := fmt.Sprintf("convert -delay 100 -loop 0 %s/*.png %s", vis.Dir, outputPath)
 	cmd := exec.Command("/bin/sh", "-c", convertCommand)
 	err := cmd.Run()

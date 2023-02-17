@@ -14,10 +14,10 @@ const (
 
 type CellType uint8
 const (
-	Open CellType = iota
-	Wall
-	Spawn
-	Goal
+	OpenCell CellType = iota
+	WallCell
+	SpawnCell
+	GoalCell
 )
 
 type Cell struct {
@@ -37,15 +37,15 @@ type Cell struct {
 // I've divided this behaviour in case we want to introduce blocks that are shootable but not walkable in the future
 // (open pits?), or if we want glass walls that you can see through but not shoot through, etc.
 func (c *Cell) BotsCanPass() bool {
-	return c.Type != Wall && c.Type != Goal
+	return c.Type != WallCell && c.Type != GoalCell
 }
 
 func (c *Cell) ShotsCanPass() bool {
-	return c.Type != Wall && c.Type != Goal
+	return c.Type != WallCell && c.Type != GoalCell
 }
 
 func (c *Cell) BlocksVision() bool {
-	return c.Type == Wall || c.Type == Goal
+	return c.Type == WallCell || c.Type == GoalCell
 }
 
 // If this is too slow, we could make it a map instead.
@@ -62,8 +62,8 @@ type Arena struct {
 	Width int
 	Height int
 	Cells []Cell
-	TeamASpawns []*Cell
-	TeamBSpawns []*Cell
+	Spawns [2][]*Cell
+	Goals [2]*Cell
 }
 
 func LoadArena(filename string) (a *Arena) {
@@ -84,8 +84,8 @@ func NewArena(img image.Image) *Arena {
 		Width: img.Bounds().Dx(),
 		Height: img.Bounds().Dy(),
 		Cells: make([]Cell, img.Bounds().Dx() * img.Bounds().Dy()),
-		TeamASpawns: make([]*Cell, 0, BOTS_PER_TEAM),
-		TeamBSpawns: make([]*Cell, 0, BOTS_PER_TEAM),
+		Spawns: [2][]*Cell{make([]*Cell, 0, BOTS_PER_TEAM), make([]*Cell, 0, BOTS_PER_TEAM)},
+		Goals: [2]*Cell{},
 	}
 
 	// Translate image pixels to cells
@@ -97,20 +97,17 @@ func NewArena(img image.Image) *Arena {
 
 			red, green, blue, _ := img.At(x, y).RGBA()
 			if red == 0 && green == 0 && blue == 0 {  // Black pixels indicate walls.
-				cell.Type = Wall
+				cell.Type = WallCell
 				} else if red == 65535 && green == 65535 && blue == 65535 { // White pixels indicate open space.
-				cell.Type = Open
+				cell.Type = OpenCell
 			} else if red == 65535 { // Red pixels indicate spawn points.
-				cell.Type = Spawn
+				cell.Type = SpawnCell
 				cell.Team = intToTeam(green)
-				if cell.Team == TeamA {
-					a.TeamASpawns = append(a.TeamASpawns, cell)
-				} else {
-					a.TeamBSpawns = append(a.TeamBSpawns, cell)
-				}
+				a.Spawns[cell.Team] = append(a.Spawns[cell.Team], cell)
 			} else if green == 65535 { // Green pixels indicate the goal points for each team.
-				cell.Type = Goal
+				cell.Type = GoalCell
 				cell.Team = intToTeam(red)
+				a.Goals[cell.Team] = cell
 			} else {
 				logger.Fatalf("Unknown color in image at (%d, %d): %02x, %02x, %02x", x, y, red, green, blue)
 			}
@@ -251,13 +248,13 @@ func (a *Arena) verifyValidArena() {
 
 	for i := 0; i < len(a.Cells); i++ {
 		cell := &a.Cells[i]
-		if cell.Type == Spawn && cell.Team == TeamA {
+		if cell.Type == SpawnCell && cell.Team == TeamA {
 			a_spawns++
-		} else if cell.Type == Spawn && cell.Team == TeamB {
+		} else if cell.Type == SpawnCell && cell.Team == TeamB {
 			b_spawns++
-		} else if cell.Type == Goal && cell.Team == TeamA {
+		} else if cell.Type == GoalCell && cell.Team == TeamA {
 			a_goals++
-		} else if cell.Type == Goal && cell.Team == TeamB {
+		} else if cell.Type == GoalCell && cell.Team == TeamB {
 			b_goals++
 		}
 	}

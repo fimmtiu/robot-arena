@@ -51,3 +51,26 @@ func BresenhamLine(x0, y0, x1, y1 int, callback func(x, y int) bool) bool {
 
 	return true
 }
+
+// Each team considers "north" to be the direction of the enemy's goal, and "south" to be the direction of its own side.
+// This, plus the horizontal and vertical symmetry of the map, allows a script to run identically regardless of whether
+// it's controlling Team A or Team B.
+func relativeToActualDirection(relative Direction, team Team) Direction {
+	if team == TeamA {
+		switch relative {
+		case North: return East
+		case South: return West
+		case East:  return South
+		case West:  return North
+		}
+	} else {
+		switch relative {
+		case North: return West
+		case South: return East
+		case East:  return North
+		case West:  return South
+		}
+	}
+	logger.Fatalf("Weird direction %d for team %d!", relative, team)
+	return North
+}
