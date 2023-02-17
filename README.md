@@ -7,6 +7,9 @@ evolve useful pathfinding and combat behaviours.
 
 ![GIF of the start of a game](./example_game_start.gif)
 
+**NOTE:** This code is from a hackathon, so please judge its quality accordingly. It's short on tests, comments, etc.,
+and could probably use some refactoring.
+
 ## Basic concepts
 
 **Arena:** The robots are in a grid-based arena with walls that block line of sight and laser fire.

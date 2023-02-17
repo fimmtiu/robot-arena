@@ -179,9 +179,9 @@ func InitScript() {
 
 	// Predicates
 	functionLookupTable["can-move?"] = Function{"can-move?", 1, RS_CanMove}
-	functionLookupTable["enemy-visible?"] = Function{"enemy-visible?", 1, RS_EnemyVisible}
-	functionLookupTable["enemy-goal-visible?"] = Function{"enemy-goal-visible?", 1, RS_EnemyGoalVisible}
-	functionLookupTable["own-goal-visible?"] = Function{"own-goal-visible?", 1, RS_OwnGoalVisible}
+	functionLookupTable["enemy-visible?"] = Function{"enemy-visible?", 0, RS_EnemyVisible}
+	functionLookupTable["enemy-goal-visible?"] = Function{"enemy-goal-visible?", 0, RS_EnemyGoalVisible}
+	functionLookupTable["own-goal-visible?"] = Function{"own-goal-visible?", 0, RS_OwnGoalVisible}
 
 	// Miscellaneous
 	functionLookupTable["tick"] = Function{"tick", 0, RS_Tick}
