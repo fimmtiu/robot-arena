@@ -8,6 +8,7 @@ const (
 	South
 	East
 	West
+	NumberOfDirections
 )
 
 type ActionType int
@@ -37,14 +38,6 @@ type Goal struct {
 	Alive bool
 }
 
-type GameState struct {
-	Arena *Arena
-	Bots []Bot
-	Goals [2]Goal
-	CurrentBot *Bot
-	Tick int
-}
-
 type Match struct {
 	Rand *rand.Rand
 	State *GameState
@@ -61,30 +54,13 @@ var turnSequence = []int{0, 5, 1, 6, 2, 7, 3, 8, 4, 9}  // Alternates bots from 
 func NewMatch(arena *Arena, visualizer Visualizer, id int, scriptId_A int, scriptId_B int) *Match {
 	arena.Reset()
 	rng := rand.New(rand.NewSource(int64(id)))
-	state := &GameState{arena, make([]Bot, BOTS_PER_TEAM * 2), [2]Goal{}, nil, 0}
+	state := NewGameState(arena)
 	match := &Match{rng, state, visualizer, id,  scriptId_A, scriptId_B, [2]int{0, 0}}
 
-	scriptA := fileManager.LoadScript(state, scriptId_A)
-	scriptB := fileManager.LoadScript(state, scriptId_B)
-
-	// Team A occupies slots 0-4. Team B occupies slots 5-9.
-	for teamAindex := 0; teamAindex < BOTS_PER_TEAM; teamAindex++ {
-		state.Bots[teamAindex].Team = TeamA
-		state.Bots[teamAindex].Id = teamAindex
-		state.Bots[teamAindex].Position = arena.Spawns[TeamA][teamAindex]
-		state.Bots[teamAindex].Script = scriptA
-		state.Bots[teamAindex].Alive = true
-
-		teamBindex := teamAindex + BOTS_PER_TEAM
-		state.Bots[teamBindex].Team = TeamB
-		state.Bots[teamBindex].Id = teamBindex
-		state.Bots[teamBindex].Position = arena.Spawns[TeamB][teamAindex]
-		state.Bots[teamBindex].Script = scriptB
-		state.Bots[teamBindex].Alive = true
+	scripts := [2]Script{fileManager.LoadScript(state, scriptId_A), fileManager.LoadScript(state, scriptId_B)}
+	for i, bot := range state.Bots {
+		state.Bots[i].Script = scripts[bot.Team]
 	}
-
-	state.Goals[TeamA] = Goal{Team: TeamA, Position: arena.Goals[TeamA], Alive: true}
-	state.Goals[TeamB] = Goal{Team: TeamB, Position: arena.Goals[TeamB], Alive: true}
 
 	return match
 }
@@ -96,15 +72,6 @@ func (m *Match) RunTick() bool {
 			m.RunOneBot(&m.State.Bots[i])
 		}
 	}
-	// for each bot
-	//   run its script
-	//   get associated action
-	//   do it
-	//   update cell statistics
-	//   update score
-	//   trigger the visualizer
-	// if the game is over
-	//   return true
 
 	m.State.Tick++
 	return m.IsGameOver()
@@ -131,18 +98,10 @@ func (m *Match) RunOneBot(bot *Bot) {
 
 // If the space is passable but another bot is in the space, it's the same as hitting a wall.
 func (m *Match) BotMove(bot *Bot, destination *Cell) {
-	for _, otherBot := range m.State.Bots {
-		if bot.Id != otherBot.Id && bot.Position == destination {
-			destination = bot.Position
-		}
-	}
-
-	// We only increment the space's move counter if the bot successfully moved, not if it hit something.
-	if bot.Position != destination {
+	if m.State.CellIsEmpty(destination) {
+		bot.Position = destination
 		destination.Moves++
 	}
-
-	bot.Position = destination
 }
 
 func (m *Match) BotShoot(bot *Bot, target *Cell) {

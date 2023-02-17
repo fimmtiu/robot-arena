@@ -1,1 +1,1 @@
-(go-north)
+(move 0)
