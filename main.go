@@ -6,7 +6,7 @@ import (
 )
 
 const BOTS_PER_TEAM = 5
-const MAX_TICKS_PER_GAME = 100 // I'll crank this up to 2,000 after I'm done testing.
+const MAX_TICKS_PER_GAME = 200 // I'll crank this up to 2,000 after I'm done testing.
 
 var logger *log.Logger
 var fileManager *FileManager

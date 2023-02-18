@@ -33,7 +33,7 @@ func NewGameState(arena *Arena) *GameState {
 
 func (gs *GameState) BotAtCell(cell *Cell) *Bot {
 	for i, bot := range gs.Bots {
-		if bot.Position == cell {
+		if bot.Position == cell && bot.Alive {
 			return &gs.Bots[i]
 		}
 	}
@@ -51,10 +51,8 @@ func (gs *GameState) GoalAtCell(cell *Cell) *Goal {
 
 func (gs *GameState) FirstNonEmptyCellOnLine(src *Cell, dest *Cell) *Cell {
 	var found *Cell = nil
-	iterations := 0
 
 	BresenhamLine(src.X, src.Y, dest.X, dest.Y, func(x, y int) bool {
-		iterations++
 		c := &gs.Arena.Cells[x * gs.Arena.Height + y]
 		if !gs.CellIsEmpty(c) && c != src {
 			found = c
@@ -71,7 +69,7 @@ func (gs *GameState) NearestVisibleEnemy() *Bot {
 
 	for i := range gs.Bots {
 		bot := &gs.Bots[i]
-		if gs.CurrentBot.Team != bot.Team && gs.Arena.CanSee(gs.CurrentBot.Position, bot.Position) {
+		if gs.CurrentBot.Team != bot.Team && bot.Alive && gs.Arena.CanSee(gs.CurrentBot.Position, bot.Position) {
 			distance := gs.Arena.Distance(gs.CurrentBot.Position, bot.Position)
 			if distance < closestDistance {
 				closestDistance = distance
@@ -87,7 +85,7 @@ func (gs *GameState) CountVisibleEnemies() int {
 
 	for i := range gs.Bots {
 		bot := &gs.Bots[i]
-		if gs.CurrentBot.Team != bot.Team && gs.Arena.CanSee(gs.CurrentBot.Position, bot.Position) {
+		if gs.CurrentBot.Team != bot.Team && bot.Alive && gs.Arena.CanSee(gs.CurrentBot.Position, bot.Position) {
 			count++
 		}
 	}
