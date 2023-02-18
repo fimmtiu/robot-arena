@@ -31,6 +31,7 @@ type GifVisualizer struct {
 	lightRedSquare image.Image
 	lightBlueSquare image.Image
 	lightGreenSquare image.Image
+	laserSquare image.Image
 }
 
 const GIF_SCALE = 16
@@ -41,10 +42,18 @@ func NewGifVisualizer() *GifVisualizer {
 		logger.Fatalf("Could not create temporary directory %s: %v", dir, err)
 	}
 
+	laserWidth := GIF_SCALE / 8
+	if laserWidth < 1 {
+		laserWidth = 1
+	}
+
 	return &GifVisualizer{
 		dir, nil, 0,
-		makeSolidSquare(0, 0, 0), makeSolidSquare(255, 255, 255),	makeSolidSquare(0, 255, 0), makeSolidSquare(255, 0, 0),
-		makeSolidSquare(0, 0, 255), makeSolidSquare(255, 100, 100),	makeSolidSquare(100, 100, 255),	makeSolidSquare(120, 255, 120),
+		makeSolidSquare(GIF_SCALE, 0, 0, 0), makeSolidSquare(GIF_SCALE, 255, 255, 255),
+		makeSolidSquare(GIF_SCALE, 0, 255, 0), makeSolidSquare(GIF_SCALE, 255, 0, 0),
+		makeSolidSquare(GIF_SCALE, 0, 0, 255), makeSolidSquare(GIF_SCALE, 255, 100, 100),
+		makeSolidSquare(GIF_SCALE, 100, 100, 255), makeSolidSquare(GIF_SCALE, 120, 255, 120),
+		makeSolidSquare(laserWidth, 64, 255, 64),
 	}
 }
 
@@ -133,12 +142,17 @@ func (vis *GifVisualizer) writePng(action Action, outfile string) {
 		}
 	}
 
-	// Draw the lasers in a nice bright green.
+	// Draw the lasers in a nice bright green. (This is not terribly efficient. Lots of overdraw.)
 	if action.Type == ActionShoot {
-		BresenhamLine(vis.State.CurrentBot.Position.X, vis.State.CurrentBot.Position.Y, action.Target.X, action.Target.Y, func (x, y int) bool {
-			scaledX := vis.State.CurrentBot.Position.X * GIF_SCALE + GIF_SCALE / 2
-			scaledY := vis.State.CurrentBot.Position.Y * GIF_SCALE + GIF_SCALE / 2
-			frame.Set(scaledX, scaledY, color.RGBA{64, 255, 64, 255})
+		shooterX := vis.State.CurrentBot.Position.X * GIF_SCALE + GIF_SCALE / 2
+		shooterY := vis.State.CurrentBot.Position.Y * GIF_SCALE + GIF_SCALE / 2
+		targetX := action.Target.X * GIF_SCALE + GIF_SCALE / 2
+		targetY := action.Target.Y * GIF_SCALE + GIF_SCALE / 2
+		halfWidth := vis.laserSquare.Bounds().Size().X / 2
+
+		BresenhamLine(shooterX, shooterY, targetX, targetY, func (x, y int) bool {
+			rect := image.Rect(x - halfWidth, y - halfWidth, x + halfWidth, y + halfWidth)
+			draw.Draw(frame, rect, vis.laserSquare, swatch.Min, draw.Src)
 			return true
 		})
 	}
@@ -153,10 +167,10 @@ func (vis *GifVisualizer) writePng(action Action, outfile string) {
 
 // We pre-generate some solid color swatches so that we can copy them over in big rectangles instead of laboriously
 // filling in each pixel on each frame.
-func makeSolidSquare(r, g, b uint8) image.Image {
-	square := image.NewRGBA(image.Rect(0, 0, GIF_SCALE, GIF_SCALE))
-	for x := 0; x < GIF_SCALE; x++ {
-		for y := 0; y < GIF_SCALE; y++ {
+func makeSolidSquare(sideLen int, r, g, b uint8) image.Image {
+	square := image.NewRGBA(image.Rect(0, 0, sideLen, sideLen))
+	for x := 0; x < sideLen; x++ {
+		for y := 0; y < sideLen; y++ {
 			square.Set(x, y, color.RGBA{r, g, b, 255})
 		}
 	}
