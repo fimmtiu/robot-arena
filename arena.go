@@ -45,7 +45,7 @@ func (c *Cell) ShotsCanPass() bool {
 }
 
 func (c *Cell) BlocksVision() bool {
-	return c.Type == WallCell || c.Type == GoalCell
+	return c.Type == WallCell
 }
 
 // If this is too slow, we could make it a map instead.
