@@ -88,6 +88,7 @@ func (m *Match) RunTick() bool {
 	}
 
 	if m.State.IsGameOver() {
+		logger.Printf("Final score: Team A %d, Team B %d.", m.Scores[TeamA], m.Scores[TeamB])
 		if m.Visualizer != nil {
 			m.Visualizer.Finish()
 		}
@@ -126,8 +127,9 @@ func (m *Match) BotShoot(bot *Bot, action Action) {
 	// We modify the action so that the visualizer will later know which target was actually hit.
 	action.Target = m.State.FirstNonEmptyCellOnLine(bot.Position, action.Target)
 
+
 	// Accuracy falls off pretty severely with distance. Will need to adjust this eventually.
-	hitChance := 1.0 - (float32(m.State.Arena.Distance(bot.Position, action.Target)) * 0.05)
+	hitChance := 1.0 - (float32(m.State.Arena.Distance(bot.Position, action.Target)) * 0.03)
 	if m.Rand.Float32() <= hitChance {
 		targetBot := m.State.BotAtCell(action.Target)
 		targetGoal := m.State.GoalAtCell(action.Target)
@@ -136,10 +138,10 @@ func (m *Match) BotShoot(bot *Bot, action Action) {
 			targetBot.Alive = false
 			targetBot.Position.Kills++
 			if targetBot.Team == bot.Team {
-				logger.Printf("Friendly fire on team %d!", bot.Team)
+				logger.Printf("Friendly fire on team %d! Bot %d killed bot %d. (%d, %d)", bot.Team, bot.Id, targetBot.Id, targetBot.Position.X, targetBot.Position.Y)
 				m.Scores[bot.Team] -= 2  // penalty for friendly fire
 			} else {
-				logger.Printf("A bot from team %d killed a bot from team %d", bot.Team, targetBot.Team)
+				logger.Printf("Bot %d from team %d killed enemy bot %d", bot.Id, bot.Team, targetBot.Id)
 				m.Scores[bot.Team] += 1
 			}
 		} else if targetGoal != nil {

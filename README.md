@@ -157,3 +157,7 @@ following data points, one row per match:
 * `ticks`: How many ticks elapsed between the start and end of the match
 
 We'll use these results to decide which scripts get spliced and mutated for the next generation.
+
+## To do
+
+* Split GifVisualizer into separate GIF and MP4 visualizers. (I've just shoehorned the MP4 stuff into there for now.)

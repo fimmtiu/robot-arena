@@ -63,9 +63,9 @@ func (gs *GameState) FirstNonEmptyCellOnLine(src *Cell, dest *Cell) *Cell {
 	return found
 }
 
-func (gs *GameState) NearestVisibleEnemy() *Bot {
+func (gs *GameState) NearestVisibleEnemyOrGoal() *Cell {
 	closestDistance := gs.Arena.Width * 100
-	var closestBot *Bot = nil
+	var closestTarget *Cell = nil
 
 	for i := range gs.Bots {
 		bot := &gs.Bots[i]
@@ -73,11 +73,23 @@ func (gs *GameState) NearestVisibleEnemy() *Bot {
 			distance := gs.Arena.Distance(gs.CurrentBot.Position, bot.Position)
 			if distance < closestDistance {
 				closestDistance = distance
-				closestBot = bot
+				closestTarget = bot.Position
 			}
 		}
 	}
-	return closestBot
+
+	for i := range gs.Goals {
+		goal := &gs.Goals[i]
+		if gs.CurrentBot.Team != goal.Team && goal.Alive && gs.Arena.CanSee(gs.CurrentBot.Position, goal.Position) {
+			distance := gs.Arena.Distance(gs.CurrentBot.Position, goal.Position)
+			if distance < closestDistance {
+				closestDistance = distance
+				closestTarget = goal.Position
+			}
+		}
+	}
+
+	return closestTarget
 }
 
 func (gs *GameState) CountVisibleEnemies() int {

@@ -413,11 +413,11 @@ func RS_Shoot(s *Script, args []*ScriptNode) Result {
 }
 
 func RS_ShootNearest(s *Script, args []*ScriptNode) Result {
-	nearestVisibleBot := s.State.NearestVisibleEnemy()
-	if nearestVisibleBot == nil {
+	nearestTarget := s.State.NearestVisibleEnemyOrGoal()
+	if nearestTarget == nil {
 		return Result{Type: ResultAction, Action: Action{Type: ActionWait}}
 	}
-	action := Action{Type: ActionShoot, Target: nearestVisibleBot.Position}
+	action := Action{Type: ActionShoot, Target: nearestTarget}
 	return Result{Type: ResultAction, Action: action}
 }
 

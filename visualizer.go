@@ -30,6 +30,7 @@ type GifVisualizer struct {
 	blueSquare image.Image
 	lightRedSquare image.Image
 	lightBlueSquare image.Image
+	lightGreenSquare image.Image
 }
 
 const GIF_SCALE = 16
@@ -43,7 +44,7 @@ func NewGifVisualizer() *GifVisualizer {
 	return &GifVisualizer{
 		dir, nil, 0,
 		makeSolidSquare(0, 0, 0), makeSolidSquare(255, 255, 255),	makeSolidSquare(0, 255, 0), makeSolidSquare(255, 0, 0),
-		makeSolidSquare(0, 0, 255), makeSolidSquare(255, 100, 100),	makeSolidSquare(100, 100, 255),
+		makeSolidSquare(0, 0, 255), makeSolidSquare(255, 100, 100),	makeSolidSquare(100, 100, 255),	makeSolidSquare(120, 255, 120),
 	}
 }
 
@@ -130,6 +131,16 @@ func (vis *GifVisualizer) writePng(action Action, outfile string) {
 				draw.Draw(frame, rect, vis.lightBlueSquare, swatch.Min, draw.Src)
 			}
 		}
+	}
+
+	// Draw the lasers in a nice bright green.
+	if action.Type == ActionShoot {
+		BresenhamLine(vis.State.CurrentBot.Position.X, vis.State.CurrentBot.Position.Y, action.Target.X, action.Target.Y, func (x, y int) bool {
+			scaledX := vis.State.CurrentBot.Position.X * GIF_SCALE + GIF_SCALE / 2
+			scaledY := vis.State.CurrentBot.Position.Y * GIF_SCALE + GIF_SCALE / 2
+			frame.Set(scaledX, scaledY, color.RGBA{64, 255, 64, 255})
+			return true
+		})
 	}
 
 	f, err := os.OpenFile(outfile, os.O_WRONLY|os.O_CREATE, 0644)
