@@ -92,12 +92,18 @@ func (gs *GameState) NearestVisibleEnemyOrGoal() *Cell {
 	return closestTarget
 }
 
-func (gs *GameState) CountVisibleEnemies() int {
+func (gs *GameState) CountVisibleEnemiesAndGoals() int {
 	count := 0
 
 	for i := range gs.Bots {
 		bot := &gs.Bots[i]
 		if gs.CurrentBot.Team != bot.Team && bot.Alive && gs.Arena.CanSee(gs.CurrentBot.Position, bot.Position) {
+			count++
+		}
+	}
+	for i := range gs.Goals {
+		goal := &gs.Goals[i]
+		if gs.CurrentBot.Team != goal.Team && goal.Alive && gs.Arena.CanSee(gs.CurrentBot.Position, goal.Position) {
 			count++
 		}
 	}

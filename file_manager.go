@@ -55,6 +55,13 @@ func (fm *FileManager) GenerationDir() string {
 	return fmt.Sprintf("scenario/%s/gen_%d", fm.Scenario, fm.Generation)
 }
 
+func (fm *FileManager) PreviousGenerationDir() string {
+	if fm.Generation == 1 {
+		logger.Fatal("Can't call PreviousGenerationDir when there's no previous generation!")
+	}
+	return fmt.Sprintf("scenario/%s/gen_%d", fm.Scenario, fm.Generation - 1)
+}
+
 func (fm *FileManager) ScriptsDir() string {
 	return fmt.Sprintf("scenario/%s/gen_%d/scripts", fm.Scenario, fm.Generation)
 }

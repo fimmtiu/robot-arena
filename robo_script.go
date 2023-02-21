@@ -426,7 +426,7 @@ func RS_Tick(s *Script, args []*ScriptNode) Result {
 }
 
 func RS_EnemyVisible(s *Script, args []*ScriptNode) Result {
-	if s.State.CountVisibleEnemies() > 0 { // This could be optimized to short-circuit if necessary.
+	if s.State.CountVisibleEnemiesAndGoals() > 0 { // This could be optimized to short-circuit if necessary.
 		return ResultTrue
 	} else {
 		return ResultFalse
@@ -434,7 +434,7 @@ func RS_EnemyVisible(s *Script, args []*ScriptNode) Result {
 }
 
 func RS_VisibleEnemyCount(s *Script, args []*ScriptNode) Result {
-	return Result{Type: ResultInt, Int: s.State.CountVisibleEnemies()}
+	return Result{Type: ResultInt, Int: s.State.CountVisibleEnemiesAndGoals()}
 }
 
 func RS_EnemyGoalVisible(s *Script, args []*ScriptNode) Result {
