@@ -112,7 +112,8 @@ To do: integer negation? absolute value?
 ### Other functions
 
 * `(tick)`: How many ticks have passed since the start of the game.
-* `(number-of-visible-enemies)`: The number of enemies in this robot's field of view.
+* `(visible-enemies-count)`: The number of enemies in this robot's field of view.
+* `(visible-allies-count)`: The number of allies in this robot's field of view.
 * `(my-x-pos)`: The robot's X coordinate (rotated relative to the team's orientation)
 * `(my-y-pos)`: The robot's Y coordinate (rotated relative to the team's orientation)
 

@@ -69,7 +69,7 @@ func (gs *GameState) NearestVisibleEnemyOrGoal() *Cell {
 
 	for i := range gs.Bots {
 		bot := &gs.Bots[i]
-		if gs.CurrentBot.Team != bot.Team && bot.Alive && gs.Arena.CanSee(gs.CurrentBot.Position, bot.Position) {
+		if gs.CurrentTeam() != bot.Team && bot.Alive && gs.Arena.CanSee(gs.CurrentBot.Position, bot.Position) {
 			distance := gs.Arena.Distance(gs.CurrentBot.Position, bot.Position)
 			if distance < closestDistance {
 				closestDistance = distance
@@ -80,7 +80,7 @@ func (gs *GameState) NearestVisibleEnemyOrGoal() *Cell {
 
 	for i := range gs.Goals {
 		goal := &gs.Goals[i]
-		if gs.CurrentBot.Team != goal.Team && goal.Alive && gs.Arena.CanSee(gs.CurrentBot.Position, goal.Position) {
+		if gs.CurrentTeam() != goal.Team && goal.Alive && gs.Arena.CanSee(gs.CurrentBot.Position, goal.Position) {
 			distance := gs.Arena.Distance(gs.CurrentBot.Position, goal.Position)
 			if distance < closestDistance {
 				closestDistance = distance
@@ -92,22 +92,41 @@ func (gs *GameState) NearestVisibleEnemyOrGoal() *Cell {
 	return closestTarget
 }
 
-func (gs *GameState) CountVisibleEnemiesAndGoals() int {
+func (gs *GameState) CurrentTeam() Team {
+	return gs.CurrentBot.Team
+}
+
+func (gs *GameState) OpposingTeam() Team {
+	if gs.CurrentBot.Team == TeamA {
+		return TeamB
+	}
+	return TeamA
+}
+
+func (gs *GameState) CountVisibleEntities(team Team) int {
 	count := 0
 
 	for i := range gs.Bots {
 		bot := &gs.Bots[i]
-		if gs.CurrentBot.Team != bot.Team && bot.Alive && gs.Arena.CanSee(gs.CurrentBot.Position, bot.Position) {
+		if team == bot.Team && bot.Alive && gs.Arena.CanSee(gs.CurrentBot.Position, bot.Position) {
 			count++
 		}
 	}
 	for i := range gs.Goals {
 		goal := &gs.Goals[i]
-		if gs.CurrentBot.Team != goal.Team && goal.Alive && gs.Arena.CanSee(gs.CurrentBot.Position, goal.Position) {
+		if team == goal.Team && goal.Alive && gs.Arena.CanSee(gs.CurrentBot.Position, goal.Position) {
 			count++
 		}
 	}
 	return count
+}
+
+func (gs *GameState) CountVisibleEnemiesAndGoals() int {
+	return gs.CountVisibleEntities(gs.OpposingTeam())
+}
+
+func (gs *GameState) CountVisibleAlliesAndGoals() int {
+	return gs.CountVisibleEntities(gs.CurrentTeam())
 }
 
 func (gs *GameState) GoalVisible(team Team) bool {

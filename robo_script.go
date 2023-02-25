@@ -185,7 +185,8 @@ func InitScript() {
 
 	// Miscellaneous
 	functionLookupTable["tick"] = Function{"tick", 0, RS_Tick}
-	functionLookupTable["visible-enemy-count"] = Function{"visible-enemy-count", 0, RS_VisibleEnemyCount}
+	functionLookupTable["visible-enemies-count"] = Function{"visible-enemies-count", 0, RS_VisibleEnemiesCount}
+	functionLookupTable["visible-allies-count"] = Function{"visible-allies-count", 0, RS_VisibleAlliesCount}
 	functionLookupTable["my-x-pos"] = Function{"my-x-pos", 0, RS_MyXPos}
 	functionLookupTable["my-y-pos"] = Function{"my-y-pos", 0, RS_MyYPos}
 }
@@ -370,7 +371,7 @@ func RS_Move(s *Script, args []*ScriptNode) Result {
 		return direction
 	}
 
-	dir := relativeToActualDirection(Direction(direction.Int % int(NumberOfDirections)), s.State.CurrentBot.Team)
+	dir := relativeToActualDirection(Direction(direction.Int % int(NumberOfDirections)), s.State.CurrentTeam())
 	destination := s.State.Arena.DestinationCellAfterMove(s.State.CurrentBot.Position, dir)
 	return Result{Type: ResultAction, Action: Action{Type: ActionMove, Target: destination}}
 }
@@ -381,7 +382,7 @@ func RS_CanMove(s *Script, args []*ScriptNode) Result {
 		return direction
 	}
 
-	dir := relativeToActualDirection(Direction(direction.Int % int(NumberOfDirections)), s.State.CurrentBot.Team)
+	dir := relativeToActualDirection(Direction(direction.Int % int(NumberOfDirections)), s.State.CurrentTeam())
 	destination := s.State.Arena.DestinationCellAfterMove(s.State.CurrentBot.Position, dir)
 	if s.State.CellIsEmpty(destination) {
 		return ResultTrue
@@ -400,7 +401,7 @@ func RS_Shoot(s *Script, args []*ScriptNode) Result {
 		return direction
 	}
 
-	dir := relativeToActualDirection(Direction(direction.Int % int(NumberOfDirections)), s.State.CurrentBot.Team)
+	dir := relativeToActualDirection(Direction(direction.Int % int(NumberOfDirections)), s.State.CurrentTeam())
 	pos := s.State.CurrentBot.Position
 	var target *Cell
 	switch dir {
@@ -433,16 +434,16 @@ func RS_EnemyVisible(s *Script, args []*ScriptNode) Result {
 	}
 }
 
-func RS_VisibleEnemyCount(s *Script, args []*ScriptNode) Result {
+func RS_VisibleEnemiesCount(s *Script, args []*ScriptNode) Result {
 	return Result{Type: ResultInt, Int: s.State.CountVisibleEnemiesAndGoals()}
 }
 
+func RS_VisibleAlliesCount(s *Script, args []*ScriptNode) Result {
+	return Result{Type: ResultInt, Int: s.State.CountVisibleAlliesAndGoals()}
+}
+
 func RS_EnemyGoalVisible(s *Script, args []*ScriptNode) Result {
-	team := TeamA
-	if s.State.CurrentBot.Team == team {
-		team = TeamB
-	}
-	if s.State.GoalVisible(team) {
+	if s.State.GoalVisible(s.State.OpposingTeam()) {
 		return ResultTrue
 	} else {
 		return ResultFalse
@@ -450,7 +451,7 @@ func RS_EnemyGoalVisible(s *Script, args []*ScriptNode) Result {
 }
 
 func RS_OwnGoalVisible(s *Script, args []*ScriptNode) Result {
-	if s.State.GoalVisible(s.State.CurrentBot.Team) {
+	if s.State.GoalVisible(s.State.CurrentTeam()) {
 		return ResultTrue
 	} else {
 		return ResultFalse
@@ -460,7 +461,7 @@ func RS_OwnGoalVisible(s *Script, args []*ScriptNode) Result {
 // We have to rotate it 90 degrees so that X increasing is consistently east and Y increasing is consistently south, no matter which team you're on. (Yes, it's confusing. Imagine it from the perspective of the bot, looking towards the enemy goal.)
 func RS_MyXPos(s *Script, args []*ScriptNode) Result {
 	pos := s.State.CurrentBot.Position.Y
-	if s.State.CurrentBot.Team == TeamA {
+	if s.State.CurrentTeam() == TeamA {
 		return Result{Type: ResultInt, Int: pos}
 	} else {
 		return Result{Type: ResultInt, Int: s.State.Arena.Height - pos}
@@ -469,7 +470,7 @@ func RS_MyXPos(s *Script, args []*ScriptNode) Result {
 
 func RS_MyYPos(s *Script, args []*ScriptNode) Result {
 	pos := s.State.CurrentBot.Position.X
-	if s.State.CurrentBot.Team == TeamA {
+	if s.State.CurrentTeam() == TeamA {
 		return Result{Type: ResultInt, Int: pos}
 	} else {
 		return Result{Type: ResultInt, Int: s.State.Arena.Width - pos}
