@@ -63,10 +63,7 @@ func NewMatch(arena *Arena, visualizer Visualizer, id int, scriptId_A int, scrip
 		state.Bots[i].Script = scripts[bot.Team]
 	}
 
-	if visualizer != nil {
-		visualizer.Init(state)
-	}
-
+	visualizer.Init(state)
 	return match
 }
 
@@ -75,12 +72,12 @@ func (m *Match) RunTick() bool {
 	for _, i := range turnSequence {
 		if m.State.Bots[i].Alive {
 			m.RunOneBot(&m.State.Bots[i])
+		} else {
+			m.Visualizer.NoChange()
 		}
 	}
 
-	if m.Visualizer != nil {
-		m.Visualizer.TickComplete()
-	}
+	m.Visualizer.TickComplete()
 	m.State.Tick++
 	if m.State.Tick >= MAX_TICKS_PER_GAME {  // Penalize both teams if the game runs too long.
 		m.Scores[TeamA] -= 5
@@ -89,9 +86,7 @@ func (m *Match) RunTick() bool {
 
 	if m.State.IsGameOver() {
 		logger.Printf("Final score: Team A %d, Team B %d.", m.Scores[TeamA], m.Scores[TeamB])
-		if m.Visualizer != nil {
-			m.Visualizer.Finish()
-		}
+		m.Visualizer.Finish()
 		return true
 	}
 	return false
@@ -109,9 +104,7 @@ func (m *Match) RunOneBot(bot *Bot) {
 		m.BotShoot(bot, action)
 	}
 
-	if m.Visualizer != nil {
-		m.Visualizer.Update(action)
-	}
+	m.Visualizer.Update(action)
 }
 
 // If the space is passable but another bot is in the space, it's the same as hitting a wall.

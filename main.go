@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"strings"
 )
 
 const BOTS_PER_TEAM = 5
@@ -38,9 +39,7 @@ func main() {
 	// }
 
 	fileManager = NewFileManager("monkey", 1)
-
-	vis := NewGifVisualizer()
-	currentMatch = NewMatch(arena, vis, 1, 1, 1)
+	currentMatch = NewMatch(arena, getVisualizer(), 1, 1, 1)
 
 	for i := 0; i < MAX_TICKS_PER_GAME; i++ {
 		if currentMatch.RunTick() {
@@ -49,4 +48,15 @@ func main() {
 	}
 
 	logger.Printf("Done!")
+}
+
+func getVisualizer() Visualizer {
+	switch strings.ToLower(os.Getenv("VIS")) {
+	case "gif":
+		return NewGifVisualizer()
+	case "mp4":
+		return NewMp4Visualizer()
+	default:
+		return NewNullVisualizer()
+	}
 }
