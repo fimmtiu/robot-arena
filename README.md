@@ -87,6 +87,7 @@ since the correct choice of language primitives makes a huge difference to the s
 * `(= a b)`: True if `a` is equal to `b`.
 * `(can-move? direction)`: True if the space in that direction is empty (no walls, goals, or bots).
 * `(enemy-visible?)`: True if any enemy robot is within sight.
+* `(ally-visible?)`: True if any allied robot is within sight.
 * `(enemy-goal-visible?)`: True if the enemy's goal is within sight.
 * `(own-goal-visible?)`: True if your own goal is within sight.
 

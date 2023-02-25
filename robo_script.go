@@ -180,6 +180,7 @@ func InitScript() {
 	// Predicates
 	functionLookupTable["can-move?"] = Function{"can-move?", 1, RS_CanMove}
 	functionLookupTable["enemy-visible?"] = Function{"enemy-visible?", 0, RS_EnemyVisible}
+	functionLookupTable["ally-visible?"] = Function{"ally-visible?", 0, RS_AllyVisible}
 	functionLookupTable["enemy-goal-visible?"] = Function{"enemy-goal-visible?", 0, RS_EnemyGoalVisible}
 	functionLookupTable["own-goal-visible?"] = Function{"own-goal-visible?", 0, RS_OwnGoalVisible}
 
@@ -428,6 +429,14 @@ func RS_Tick(s *Script, args []*ScriptNode) Result {
 
 func RS_EnemyVisible(s *Script, args []*ScriptNode) Result {
 	if s.State.CountVisibleEnemiesAndGoals() > 0 { // This could be optimized to short-circuit if necessary.
+		return ResultTrue
+	} else {
+		return ResultFalse
+	}
+}
+
+func RS_AllyVisible(s *Script, args []*ScriptNode) Result {
+	if s.State.CountVisibleAlliesAndGoals() > 0 { // This could be optimized to short-circuit if necessary.
 		return ResultTrue
 	} else {
 		return ResultFalse
