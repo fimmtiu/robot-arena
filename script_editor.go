@@ -38,7 +38,7 @@ func (editor *ScriptEditor) RandomScript() string {
 	for countExpressions(script) < MIN_EXPRS_PER_SCRIPT {
 		script = editor.wrapNode(script)
 	}
-	return editor.FormatScript(script, 0)
+	return editor.FormatScript(script)
 }
 
 func (editor *ScriptEditor) randomNode() *ScriptNode {
@@ -100,28 +100,27 @@ func (editor *ScriptEditor) SpliceScripts(scriptA, scriptB string) string {
 	return "FIXME SPLICE WHATEVERS"
 }
 
-func (editor *ScriptEditor) FormatScript(node *ScriptNode, indent int) string {
+func (editor *ScriptEditor) recursiveFormat(node *ScriptNode, indentLevel int) string {
 	switch node.Type {
 	case Expr:
-		spaces := strings.Repeat(" ", indent)
 		switch node.Children[0].Func.Arity {
 		case 0:
-			return fmt.Sprintf("%s(%s)", spaces, editor.FormatScript(node.Children[0], indent))
+			return fmt.Sprintf("(%s)", node.Children[0].Func.Name)
 		case 1:
-			return fmt.Sprintf("%s(%s %s)", spaces,
-													editor.FormatScript(node.Children[0], indent),
-													editor.FormatScript(node.Children[1], indent))
+			return fmt.Sprintf("(%s %s)",	node.Children[0].Func.Name,
+													editor.recursiveFormat(node.Children[1], indentLevel + len(node.Children[0].Func.Name) + 2))
 		case 2:
-			return fmt.Sprintf("%s(%s %s\n%s)", spaces,
-													editor.FormatScript(node.Children[0], indent),
-													editor.FormatScript(node.Children[1], indent),
-													editor.FormatScript(node.Children[2], indent + len(node.Children[0].Func.Name) + 2))
+			return fmt.Sprintf("(%s %s\n%s%s)",	node.Children[0].Func.Name,
+													editor.recursiveFormat(node.Children[1], indentLevel + len(node.Children[0].Func.Name) + 2),
+													strings.Repeat(" ", indentLevel + len(node.Children[0].Func.Name) + 2),
+													editor.recursiveFormat(node.Children[2], indentLevel + len(node.Children[0].Func.Name) + 2))
 		case 3:
-			return fmt.Sprintf("%s(%s %s\n%s\n%s)", spaces,
-													editor.FormatScript(node.Children[0], indent),
-													editor.FormatScript(node.Children[1], indent),
-													editor.FormatScript(node.Children[2], indent + len(node.Children[0].Func.Name) + 2),
-													editor.FormatScript(node.Children[3], indent + len(node.Children[0].Func.Name) + 2))
+			return fmt.Sprintf("(%s %s\n%s%s\n%s%s)",	node.Children[0].Func.Name,
+													editor.recursiveFormat(node.Children[1], indentLevel + len(node.Children[0].Func.Name) + 2),
+													strings.Repeat(" ", indentLevel + len(node.Children[0].Func.Name) + 2),
+													editor.recursiveFormat(node.Children[2], indentLevel + len(node.Children[0].Func.Name) + 2),
+													strings.Repeat(" ", indentLevel + len(node.Children[0].Func.Name) + 2),
+													editor.recursiveFormat(node.Children[3], indentLevel + len(node.Children[0].Func.Name) + 2))
 		}
 	case FuncName:
 		return node.Func.Name
@@ -129,4 +128,8 @@ func (editor *ScriptEditor) FormatScript(node *ScriptNode, indent int) string {
 		return fmt.Sprintf("%d", node.N)
 	}
 	return "OMG WTF AUGH THIS IS THE WORST"
+}
+
+func (editor *ScriptEditor) FormatScript(node *ScriptNode) string {
+	return editor.recursiveFormat(node, 0)
 }
