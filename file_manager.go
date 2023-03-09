@@ -1,15 +1,17 @@
 package main
 
 import (
+	"bufio"
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
-	"strconv"
+	"strings"
 )
 
 type FileManager struct {
@@ -17,6 +19,8 @@ type FileManager struct {
 	Generation int
 	ScriptIds []int
 }
+
+type ResultProcessor func(matchId, scriptA, scriptB, scoreA, scoreB, ticks int)
 
 var scriptIdRegexp = regexp.MustCompile(`/(\d+).l$`)
 var generationRegexp = regexp.MustCompile(`/gen_(\d+)$`)
@@ -39,12 +43,7 @@ func NewFileManager(scenario string, generation int) *FileManager {
 		if len(submatches) != 2 {
 			logger.Fatalf("Unparseable name in scripts directory: %v", filename)
 		}
-		number, err := strconv.Atoi(submatches[1])
-		if err != nil {
-			logger.Fatalf("Can't convert name to number: %v, %v", filename, err)
-		}
-
-		fm.ScriptIds = append(fm.ScriptIds, number)
+		fm.ScriptIds = append(fm.ScriptIds, strToInt(submatches[1]))
 	}
 	sort.Ints(fm.ScriptIds)
 
@@ -79,10 +78,7 @@ func (fm *FileManager) currentHighestGeneration() int {
 		if len(submatches) != 2 {
 			logger.Fatalf("Unparseable name in scenario directory: %v", dirname)
 		}
-		number, err := strconv.Atoi(submatches[0])
-		if err != nil {
-			logger.Fatalf("Can't convert name to number: %v, %v", dirname, err)
-		}
+		number := strToInt(submatches[0])
 		logger.Printf("    dirname '%s' => %d", dirname, number)
 
 		generations = append(generations, number)
@@ -107,32 +103,29 @@ func (fm *FileManager) NewScriptFile() *os.File {
 	return f
 }
 
-func (fm *FileManager) LoadScript(state *GameState, id int) Script {
+func (fm *FileManager) ScriptCode(id int) string {
 	path := fmt.Sprintf("%s/%d.l", fm.ScriptsDir(), id)
 	source, err := os.ReadFile(path)
 	if err != nil {
 		logger.Fatalf("Couldn't read script %s: %v", path, err)
 	}
+	return string(source)
+}
 
-	return Script{ParseScript(string(source)), state}
+func (fm *FileManager) LoadScript(state *GameState, id int) Script {
+	source := fm.ScriptCode(id)
+	return Script{ParseScript(source), state}
 }
 
 // X,Y (1 byte each), then moves, shots, kills, waits at 4 bytes each. Actual size will be packed smaller.
 const MAX_BYTES_PER_CELL = 2 + 4 + 4 + 4 + 4
 
-func (fm *FileManager) RecordResults(match *Match) error {
-	if err := fm.writeCellStatistics(match); err != nil {
-		return err
-	}
-
-	if err := fm.writeMatchOutcome(match); err != nil {
-		return err
-	}
-
-	return nil
+func (fm *FileManager) RecordResults(match *Match) {
+	fm.writeCellStatistics(match)
+	fm.writeMatchOutcome(match)
 }
 
-func (fm *FileManager) writeCellStatistics(match *Match) error {
+func (fm *FileManager) writeCellStatistics(match *Match) {
 	arena := match.State.Arena
 	path := fmt.Sprintf("scenario/%s/gen_%d/cells", fm.Scenario, fm.Generation)
 	buf := make([]byte, 0, arena.Width * arena.Height * MAX_BYTES_PER_CELL)
@@ -162,10 +155,9 @@ func (fm *FileManager) writeCellStatistics(match *Match) error {
 	}
 
 	logger.Printf("Wrote %d bytes to cell statistics file.", written)
-	return nil
 }
 
-func (fm *FileManager) writeMatchOutcome(match *Match) error {
+func (fm *FileManager) writeMatchOutcome(match *Match) {
 	path := fmt.Sprintf("scenario/%s/gen_%d/results.csv", fm.Scenario, fm.Generation)
 
 	file, err := os.OpenFile(path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
@@ -187,5 +179,34 @@ func (fm *FileManager) writeMatchOutcome(match *Match) error {
 	}
 
 	logger.Printf("Wrote %d characters to results CSV.", written)
-	return nil
+}
+
+func (fm *FileManager) EachResultRow(callback ResultProcessor) {
+	path := fmt.Sprintf("scenario/%s/gen_%d/results.csv", fm.Scenario, fm.Generation)
+	file, err := os.OpenFile(path, os.O_RDONLY, 0644)
+	if err != nil {
+		logger.Fatalf("Can't open %s: %v", path, err)
+	}
+	reader := bufio.NewReader(file)
+	_, err = reader.ReadString('\n')
+	if err != nil {
+		logger.Fatalf("Can't read first line from %s: %v", path, err)
+	}
+
+	for {
+		row, err := reader.ReadString('\n')
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			logger.Fatalf("Can't read line from %s: %v", path, err)
+		}
+		strColumns := strings.Split(row, ",")
+		columns := make([]int, 0, len(strColumns))
+		for i, str := range strColumns {
+			columns[i] = strToInt(str)
+		}
+		callback(columns[0], columns[1], columns[2], columns[3], columns[4], columns[5])
+	}
+
+	file.Close()
 }

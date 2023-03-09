@@ -1,5 +1,7 @@
 package main
 
+import "strconv"
+
 // A basic implementation of Bresenham's line drawing algorithm. Calls the user-provided callback on each coordinate
 // pair that's part of the line. This will be used for tons of stuff, from calculating visibility to drawing actual
 // lines on an image.
@@ -87,4 +89,12 @@ func relativeToActualDirection(relative Direction, team Team) Direction {
 	}
 	logger.Fatalf("Weird direction %d for team %d!", relative, team)
 	return North
+}
+
+func strToInt(s string) int {
+	number, err := strconv.Atoi(s)
+	if err != nil {
+		logger.Fatalf("Can't convert string to number: \"%s\", %v", s, err)
+	}
+	return number
 }

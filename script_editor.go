@@ -1,0 +1,132 @@
+package main
+
+import (
+	"fmt"
+	"math"
+	"math/rand"
+	"strings"
+)
+
+const MIN_EXPRS_PER_SCRIPT = 20  // FIXME: Later, let's use the average size of scripts in the generation instead of a constant
+const MUTATIONS_PER_SCRIPT = 2 // should this be random?
+const MAX_LINE_LEN = 40
+const INTEGER_PERCENT = 0.3  // 30 percent of all randomly generated nodes will be integers.
+
+var oneLineFormatStrings = []string{
+	"%s(%s)",
+	"%s(%s %s)",
+	"%s(%s %s %s)",
+	"%s(%s %s %s %s)",
+}
+var multiLineFormatStrings = []string{
+	"%s(%s)",
+	"%s(%s %s)",
+	"%s(%s %s\n%s %s)",
+	"%s(%s %s\n%s %s\n%s %s)",
+}
+
+type ScriptEditor struct {
+	// FIXME: Will this ever need any state, or should I change these methods to plain functions?
+}
+
+func NewScriptEditor() *ScriptEditor {
+	return &ScriptEditor{}
+}
+
+func (editor *ScriptEditor) RandomScript() string {
+	script := editor.randomNode()
+	for countExpressions(script) < MIN_EXPRS_PER_SCRIPT {
+		script = editor.wrapNode(script)
+	}
+	return editor.FormatScript(script, 0)
+}
+
+func (editor *ScriptEditor) randomNode() *ScriptNode {
+	if rand.Float32() < INTEGER_PERCENT {
+		return &ScriptNode{Type: Int, N: randomInt()}
+	} else {
+		randFunction := AllFunctions[rand.Intn(len(AllFunctions))]
+		node := &ScriptNode{Type: Expr, Children: []*ScriptNode{{Type: FuncName, Func: randFunction}}}
+		for i := 0; i < randFunction.Arity; i++ {
+			node.Children = append(node.Children, editor.randomNode())
+		}
+		return node
+	}
+}
+
+// A curve that gives us numbers between 0 and 50, with more small numbers (0-5) than large ones.
+// https://www.desmos.com/calculator/onchb78rot
+func randomInt() int {
+	return int(math.Floor(0.00005 * math.Pow(3, rand.Float64() * 100)))
+}
+
+// Counts the number of expressions in a ScriptNode tree.
+func countExpressions(node *ScriptNode) int {
+	if node.Type == Expr {
+		i := 0
+		for _, child := range node.Children {
+			i += countExpressions(child)
+		}
+		return i
+	} else {
+		return 1
+	}
+}
+
+// Wraps a node in some other multi-argument expression.
+func (editor *ScriptEditor) wrapNode(node *ScriptNode) *ScriptNode {
+	for {
+		fn := AllFunctions[rand.Intn(len(AllFunctions))]
+		if fn.Arity > 0 {
+			insertAt := rand.Intn(fn.Arity)
+			expr := &ScriptNode{Type: Expr, Children: []*ScriptNode{{Type: FuncName, Func: fn}}}
+			for i := 0; i < fn.Arity; i++ {
+				if i == insertAt {
+					expr.Children = append(expr.Children, node)
+				} else {
+					expr.Children = append(expr.Children, editor.randomNode())
+				}
+			}
+			return expr
+		}
+	}
+}
+
+func (editor *ScriptEditor) MutateScript(script string) string {
+	return "FIXME MUTATE WHATEVER"
+}
+
+func (editor *ScriptEditor) SpliceScripts(scriptA, scriptB string) string {
+	return "FIXME SPLICE WHATEVERS"
+}
+
+func (editor *ScriptEditor) FormatScript(node *ScriptNode, indent int) string {
+	switch node.Type {
+	case Expr:
+		spaces := strings.Repeat(" ", indent)
+		switch node.Children[0].Func.Arity {
+		case 0:
+			return fmt.Sprintf("%s(%s)", spaces, editor.FormatScript(node.Children[0], indent))
+		case 1:
+			return fmt.Sprintf("%s(%s %s)", spaces,
+													editor.FormatScript(node.Children[0], indent),
+													editor.FormatScript(node.Children[1], indent))
+		case 2:
+			return fmt.Sprintf("%s(%s %s\n%s)", spaces,
+													editor.FormatScript(node.Children[0], indent),
+													editor.FormatScript(node.Children[1], indent),
+													editor.FormatScript(node.Children[2], indent + len(node.Children[0].Func.Name) + 2))
+		case 3:
+			return fmt.Sprintf("%s(%s %s\n%s\n%s)", spaces,
+													editor.FormatScript(node.Children[0], indent),
+													editor.FormatScript(node.Children[1], indent),
+													editor.FormatScript(node.Children[2], indent + len(node.Children[0].Func.Name) + 2),
+													editor.FormatScript(node.Children[3], indent + len(node.Children[0].Func.Name) + 2))
+		}
+	case FuncName:
+		return node.Func.Name
+	case Int:
+		return fmt.Sprintf("%d", node.N)
+	}
+	return "OMG WTF AUGH THIS IS THE WORST"
+}

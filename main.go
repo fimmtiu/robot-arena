@@ -10,6 +10,8 @@ const BOTS_PER_TEAM = 5
 const MAX_TICKS_PER_GAME = 200 // I'll crank this up to 2,000 after I'm done testing.
 
 var logger *log.Logger
+
+// FIXME: Can we arrange things so we don't need this global, where all file-related calls go through the current Generation?
 var fileManager *FileManager
 
 func init() {
@@ -25,10 +27,7 @@ func main() {
 	logger.Printf("Loaded %dx%d arena.", arena.Width, arena.Height)
 
 	// scenario := os.Args[1]
-	// genCount, err := strconv.Atoi(os.Args[2])
-	// if err != nil {
-	// 	logger.Fatalf("Invalid generation count: %s", os.Args[2])
-	// }
+	// genCount, err := strToInt(os.Args[2])
 
 	// FIXME: What if we're not starting from zero? Adding new generations to an existing scenario?
 	// for i := 0; i < genCount; i++ {

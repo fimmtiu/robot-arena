@@ -170,3 +170,29 @@ following data points, one row per match:
 * `ticks`: How many ticks elapsed between the start and end of the match
 
 We'll use these results to decide which scripts get spliced and mutated for the next generation.
+
+### Lineage tracking
+
+TO DO: Later we'll want a log that keeps track of how each script has evolved and advanced over generations.
+
+## Generation logic (FIXME)
+
+If the current generation doesn't have a scripts dir:
+  If this is the first generation:
+    Generate N random scripts.
+  Else:
+    Find the best scripts from the previous generation.
+      - Read all rows, sum scores for each script
+      - Sort by score, take the top 20%.
+    Create N new scripts: some random, some unmodified, some mutated, some spliced.
+
+Read this generation's results.csv:
+  - total number of rows
+  - for each script, the number of rows where it's appeared and the IDs of the scripts it's battled
+Loop forever:
+  For each script that's done less than N tests:
+    Pick a script that's also done less than N tests, which isn't this script and which hasn't challenged this script before
+      - If no such script exists, we're done with the generation. Break loop.
+    Run a test with the two scripts
+    Update in-memory results structure
+    Write the results to results.csv and the cells log

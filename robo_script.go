@@ -154,46 +154,51 @@ type Function struct {
 }
 
 // Can't use map literal syntax here or we get into recursive initialization.
-var functionLookupTable = make(map[string]Function)
+var FunctionLookupTable = make(map[string]Function)
+var AllFunctions []Function
 
 func InitScript() {
 	// Base functionality
-	functionLookupTable["+"] = Function{"+", 2, RS_Add}
-	functionLookupTable["-"] = Function{"-", 2, RS_Subtract}
-	functionLookupTable["*"] = Function{"*", 2, RS_Multiply}
-	functionLookupTable["/"] = Function{"/", 2, RS_Divide}
-	functionLookupTable["mod"] = Function{"mod", 2, RS_Modulus}
-	functionLookupTable["<"] = Function{"<", 2, RS_LessThan}
-	functionLookupTable[">"] = Function{">", 2, RS_GreaterThan}
-	functionLookupTable["="] = Function{"=", 2, RS_Equal}
-	functionLookupTable["if"] = Function{"if", 3, RS_If}
-	functionLookupTable["and"] = Function{"and", 2, RS_And}
-	functionLookupTable["or"] = Function{"or", 2, RS_Or}
-	functionLookupTable["not"] = Function{"not", 1, RS_Not}
+	FunctionLookupTable["+"] = Function{"+", 2, RS_Add}
+	FunctionLookupTable["-"] = Function{"-", 2, RS_Subtract}
+	FunctionLookupTable["*"] = Function{"*", 2, RS_Multiply}
+	FunctionLookupTable["/"] = Function{"/", 2, RS_Divide}
+	FunctionLookupTable["mod"] = Function{"mod", 2, RS_Modulus}
+	FunctionLookupTable["<"] = Function{"<", 2, RS_LessThan}
+	FunctionLookupTable[">"] = Function{">", 2, RS_GreaterThan}
+	FunctionLookupTable["="] = Function{"=", 2, RS_Equal}
+	FunctionLookupTable["if"] = Function{"if", 3, RS_If}
+	FunctionLookupTable["and"] = Function{"and", 2, RS_And}
+	FunctionLookupTable["or"] = Function{"or", 2, RS_Or}
+	FunctionLookupTable["not"] = Function{"not", 1, RS_Not}
 
 	// Actions
-	functionLookupTable["move"] = Function{"move", 1, RS_Move}
-	functionLookupTable["wait"] = Function{"wait", 1, RS_Wait}
-	functionLookupTable["shoot"] = Function{"shoot", 1, RS_Shoot}
-	functionLookupTable["shoot-nearest"] = Function{"shoot-nearest", 0, RS_ShootNearest}
+	FunctionLookupTable["move"] = Function{"move", 1, RS_Move}
+	FunctionLookupTable["wait"] = Function{"wait", 1, RS_Wait}
+	FunctionLookupTable["shoot"] = Function{"shoot", 1, RS_Shoot}
+	FunctionLookupTable["shoot-nearest"] = Function{"shoot-nearest", 0, RS_ShootNearest}
 
 	// Predicates
-	functionLookupTable["can-move?"] = Function{"can-move?", 1, RS_CanMove}
-	functionLookupTable["enemy-visible?"] = Function{"enemy-visible?", 0, RS_EnemyVisible}
-	functionLookupTable["ally-visible?"] = Function{"ally-visible?", 0, RS_AllyVisible}
-	functionLookupTable["enemy-goal-visible?"] = Function{"enemy-goal-visible?", 0, RS_EnemyGoalVisible}
-	functionLookupTable["own-goal-visible?"] = Function{"own-goal-visible?", 0, RS_OwnGoalVisible}
+	FunctionLookupTable["can-move?"] = Function{"can-move?", 1, RS_CanMove}
+	FunctionLookupTable["enemy-visible?"] = Function{"enemy-visible?", 0, RS_EnemyVisible}
+	FunctionLookupTable["ally-visible?"] = Function{"ally-visible?", 0, RS_AllyVisible}
+	FunctionLookupTable["enemy-goal-visible?"] = Function{"enemy-goal-visible?", 0, RS_EnemyGoalVisible}
+	FunctionLookupTable["own-goal-visible?"] = Function{"own-goal-visible?", 0, RS_OwnGoalVisible}
 
 	// Miscellaneous
-	functionLookupTable["tick"] = Function{"tick", 0, RS_Tick}
-	functionLookupTable["visible-enemies-count"] = Function{"visible-enemies-count", 0, RS_VisibleEnemiesCount}
-	functionLookupTable["visible-allies-count"] = Function{"visible-allies-count", 0, RS_VisibleAlliesCount}
-	functionLookupTable["my-x-pos"] = Function{"my-x-pos", 0, RS_MyXPos}
-	functionLookupTable["my-y-pos"] = Function{"my-y-pos", 0, RS_MyYPos}
+	FunctionLookupTable["tick"] = Function{"tick", 0, RS_Tick}
+	FunctionLookupTable["visible-enemies-count"] = Function{"visible-enemies-count", 0, RS_VisibleEnemiesCount}
+	FunctionLookupTable["visible-allies-count"] = Function{"visible-allies-count", 0, RS_VisibleAlliesCount}
+	FunctionLookupTable["my-x-pos"] = Function{"my-x-pos", 0, RS_MyXPos}
+	FunctionLookupTable["my-y-pos"] = Function{"my-y-pos", 0, RS_MyYPos}
+
+	for _, v := range FunctionLookupTable {
+		AllFunctions = append(AllFunctions, v)
+	}
 }
 
 func ResolveFunction(name string) (Function, error) {
-	function, found := functionLookupTable[name]
+	function, found := FunctionLookupTable[name]
 	if !found {
 		return Function{}, fmt.Errorf("No such function: '%s'", name)
 	}
