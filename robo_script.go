@@ -252,7 +252,7 @@ func RS_Divide(s *Script, args []*ScriptNode) Result {
 		return result1
 	}
 	result2 := s.Eval(args[1])
-	if result2.Type != ResultInt {
+	if result2.Type != ResultInt || result2.Int == 0 {
 		return result2
 	}
 	result1.Int /= result2.Int
@@ -265,7 +265,7 @@ func RS_Modulus(s *Script, args []*ScriptNode) Result {
 		return result1
 	}
 	result2 := s.Eval(args[1])
-	if result2.Type != ResultInt {
+	if result2.Type != ResultInt || result2.Int == 0 {
 		return result2
 	}
 	result1.Int %= result2.Int

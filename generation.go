@@ -33,23 +33,14 @@ func NewGeneration(scenario string, id int) *Generation {
 	}
 
 	fileManager := NewFileManager(scenario, id)
-
-	scriptIds := make([]int, len(fileManager.ScriptIds))
-	copy(scriptIds, fileManager.ScriptIds)
-	rand.Shuffle(len(scriptIds), func(i, j int) {
-		scriptIds[i], scriptIds[j] = scriptIds[j], scriptIds[i]
-	})
-
+	scriptIds := make([]int, SCRIPTS_PER_GENERATION)
 	matchesPlayed := make(map[int][]int, len(scriptIds))
-	for _, id := range fileManager.ScriptIds {
-		matchesPlayed[id] = make([]int, MATCHES_PER_SCRIPT)
-	}
 
 	return &Generation{id, previous, fileManager, NewScriptEditor(), scriptIds, matchesPlayed}
 }
 
-// Ensure that we have a minimum number of scripts in the scripts folder.
 func (g *Generation) Initialize() {
+	// Ensure that we have a minimum number of scripts in the scripts folder.
 	if g.Previous == nil {
 		logger.Printf("Gen %d: Creating %d new random scripts", g.Id, SCRIPTS_PER_GENERATION)
 		for i := 0; i < SCRIPTS_PER_GENERATION; i++ {
@@ -75,6 +66,16 @@ func (g *Generation) Initialize() {
 				g.SpliceScripts(best[rand.Intn(len(best))], best[rand.Intn(len(best))])
 			}
 		}
+	}
+
+	// Populate some record-keeping data structures that we use to track which scripts have played each other.
+	g.fileManager.ReadScriptIds()
+	copy(g.randomScriptIds, g.fileManager.ScriptIds)
+	rand.Shuffle(len(g.randomScriptIds), func(i, j int) {
+		g.randomScriptIds[i], g.randomScriptIds[j] = g.randomScriptIds[j], g.randomScriptIds[i]
+	})
+	for _, id := range g.fileManager.ScriptIds {
+		g.matchesPlayed[id] = make([]int, 0, MATCHES_PER_SCRIPT)
 	}
 }
 
@@ -174,7 +175,7 @@ func (g *Generation) pickTwoScripts() (int, int) {
 		}
 	}
 
-	logger.Fatalf("Couldn't find two valid scripts to fight!\nmatchesPlayed: %v\nrandomScriptIds:", g.matchesPlayed, g.randomScriptIds)
+	logger.Fatalf("Couldn't find two valid scripts to fight!\nmatchesPlayed: %v\nrandomScriptIds: %v\nfm ids: %v", g.matchesPlayed, g.randomScriptIds, g.fileManager.ScriptIds)
 	return -1, -1
 }
 

@@ -26,12 +26,17 @@ var scriptIdRegexp = regexp.MustCompile(`/(\d+).l$`)
 var generationRegexp = regexp.MustCompile(`/gen_(\d+)$`)
 
 func NewFileManager(scenario string, generation int) *FileManager {
-	fm := &FileManager{scenario, generation, make([]int, SCRIPTS_PER_GENERATION)}
+	fm := &FileManager{scenario, generation, make([]int, 0, SCRIPTS_PER_GENERATION)}
 
 	if err := os.MkdirAll(fm.ScriptsDir(), 0755); err != nil {
 		logger.Fatalf("Failed to create directory %s: %v", fm.ScriptsDir(), err)
 	}
 
+	fm.ReadScriptIds()
+	return fm
+}
+
+func (fm *FileManager) ReadScriptIds() {
 	pattern := fm.ScriptsDir() + "/*"
 	filenames, err := filepath.Glob(pattern)
 	if err != nil {
@@ -46,8 +51,6 @@ func NewFileManager(scenario string, generation int) *FileManager {
 		fm.ScriptIds = append(fm.ScriptIds, strToInt(submatches[1]))
 	}
 	sort.Ints(fm.ScriptIds)
-
-	return fm
 }
 
 func (fm *FileManager) GenerationDir() string {
@@ -90,8 +93,11 @@ func (fm *FileManager) currentHighestGeneration() int {
 }
 
 func (fm *FileManager) NewScriptFile() *os.File {
-	highestId := fm.ScriptIds[len(fm.ScriptIds)-1]
-	highestId++
+	highestId := 1
+	if len(fm.ScriptIds) > 0 {
+		highestId = fm.ScriptIds[len(fm.ScriptIds)-1]
+		highestId++
+	}
 
 	path := fmt.Sprintf("%s/%d.l", fm.ScriptsDir(), highestId)
 	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0644)
