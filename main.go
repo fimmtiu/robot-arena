@@ -11,7 +11,7 @@ const MAX_TICKS_PER_GAME = 200 // I'll crank this up to 2,000 after I'm done tes
 
 var logger *log.Logger
 
-// FIXME: Can we arrange things so we don't need this global, where all file-related calls go through the current Generation?
+// FIXME: Can we rearrange things so we don't need this global, where all file-related calls go through the current Generation?
 var fileManager *FileManager
 
 func init() {
@@ -26,24 +26,14 @@ func main() {
 	arena := LoadArena("arena.png")
 	logger.Printf("Loaded %dx%d arena.", arena.Width, arena.Height)
 
-	// scenario := os.Args[1]
-	// genCount, err := strToInt(os.Args[2])
+	scenario := os.Args[1]
+	genCount := strToInt(os.Args[2])
 
-	// FIXME: What if we're not starting from zero? Adding new generations to an existing scenario?
-	// for i := 0; i < genCount; i++ {
-	// 	fileManager = NewFileManager(scenario, i)
-	// 	gen := NewGeneration(i)
-	// 	gen.Initialize()
-	// 	gen.Run(arena)
-	// }
-
-	fileManager = NewFileManager("monkey", 1)
-	currentMatch = NewMatch(arena, getVisualizer(), 1, 1, 1)
-
-	for i := 0; i < MAX_TICKS_PER_GAME; i++ {
-		if currentMatch.RunTick() {
-			break
-		}
+	for i := 1; i <= genCount; i++ {
+		fileManager = NewFileManager(scenario, i)
+		gen := NewGeneration(scenario, i)
+		gen.Initialize()
+		gen.Run(arena, getVisualizer())
 	}
 
 	logger.Printf("Done!")

@@ -57,7 +57,7 @@ func (editor *ScriptEditor) randomNode() *ScriptNode {
 // A curve that gives us numbers between 0 and 50, with more small numbers (0-5) than large ones.
 // https://www.desmos.com/calculator/onchb78rot
 func randomInt() int {
-	return int(math.Floor(0.00005 * math.Pow(3, rand.Float64() * 100)))
+	return int(math.Floor(0.00005 * math.Pow(rand.Float64() * 100, 3)))
 }
 
 // Counts the number of expressions in a ScriptNode tree.
@@ -103,24 +103,34 @@ func (editor *ScriptEditor) SpliceScripts(scriptA, scriptB string) string {
 func (editor *ScriptEditor) recursiveFormat(node *ScriptNode, indentLevel int) string {
 	switch node.Type {
 	case Expr:
+		subIndentLevel := indentLevel + len(node.Children[0].Func.Name) + 2
 		switch node.Children[0].Func.Arity {
 		case 0:
 			return fmt.Sprintf("(%s)", node.Children[0].Func.Name)
 		case 1:
 			return fmt.Sprintf("(%s %s)",	node.Children[0].Func.Name,
-													editor.recursiveFormat(node.Children[1], indentLevel + len(node.Children[0].Func.Name) + 2))
+													editor.recursiveFormat(node.Children[1], subIndentLevel))
 		case 2:
 			return fmt.Sprintf("(%s %s\n%s%s)",	node.Children[0].Func.Name,
-													editor.recursiveFormat(node.Children[1], indentLevel + len(node.Children[0].Func.Name) + 2),
-													strings.Repeat(" ", indentLevel + len(node.Children[0].Func.Name) + 2),
-													editor.recursiveFormat(node.Children[2], indentLevel + len(node.Children[0].Func.Name) + 2))
-		case 3:
-			return fmt.Sprintf("(%s %s\n%s%s\n%s%s)",	node.Children[0].Func.Name,
-													editor.recursiveFormat(node.Children[1], indentLevel + len(node.Children[0].Func.Name) + 2),
-													strings.Repeat(" ", indentLevel + len(node.Children[0].Func.Name) + 2),
-													editor.recursiveFormat(node.Children[2], indentLevel + len(node.Children[0].Func.Name) + 2),
-													strings.Repeat(" ", indentLevel + len(node.Children[0].Func.Name) + 2),
-													editor.recursiveFormat(node.Children[3], indentLevel + len(node.Children[0].Func.Name) + 2))
+													editor.recursiveFormat(node.Children[1], subIndentLevel),
+													strings.Repeat(" ", subIndentLevel),
+													editor.recursiveFormat(node.Children[2], subIndentLevel))
+		case 3: // 'if' statements traditionally have two-space indentation in Lisp.
+			if node.Children[0].Func.Name == "if" {
+				return fmt.Sprintf("(%s %s\n%s%s\n%s%s)",	node.Children[0].Func.Name,
+														editor.recursiveFormat(node.Children[1], subIndentLevel),
+														strings.Repeat(" ", indentLevel + 2),
+														editor.recursiveFormat(node.Children[2], indentLevel + 2),
+														strings.Repeat(" ", indentLevel + 2),
+														editor.recursiveFormat(node.Children[3], indentLevel + 2))
+			} else {
+				return fmt.Sprintf("(%s %s\n%s%s\n%s%s)",	node.Children[0].Func.Name,
+														editor.recursiveFormat(node.Children[1], subIndentLevel),
+														strings.Repeat(" ", subIndentLevel),
+														editor.recursiveFormat(node.Children[2], subIndentLevel),
+														strings.Repeat(" ", subIndentLevel),
+														editor.recursiveFormat(node.Children[3], subIndentLevel))
+			}
 		}
 	case FuncName:
 		return node.Func.Name
@@ -131,5 +141,5 @@ func (editor *ScriptEditor) recursiveFormat(node *ScriptNode, indentLevel int) s
 }
 
 func (editor *ScriptEditor) FormatScript(node *ScriptNode) string {
-	return editor.recursiveFormat(node, 0)
+	return editor.recursiveFormat(node, 0) + "\n"
 }
