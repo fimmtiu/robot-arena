@@ -5,8 +5,6 @@ package main
 import (
 	"math/rand"
 	"sort"
-
-	"golang.org/x/exp/slices"
 )
 
 type Generation struct {
@@ -14,8 +12,7 @@ type Generation struct {
 	Previous *Generation
 	fileManager *FileManager
 	scriptEditor *ScriptEditor
-	randomScriptIds []int         // A randomly shuffled array of script IDs in this generation
-	matchesPlayed map[int][]int   // A map of (script ID) -> [IDs of scripts this script has already fought]
+	matchups [][2]int   // A list of [scriptA, scriptB] pairs.
 }
 
 const SCRIPTS_PER_GENERATION = 1000
@@ -29,14 +26,11 @@ const SPLICE_PERCENT = 0.35
 func NewGeneration(scenario string, id int) *Generation {
 	var previous *Generation = nil
 	if id > 1 {
-		previous = &Generation{id - 1, nil, NewFileManager(scenario, id - 1), NewScriptEditor(), []int{}, map[int][]int{}}
+		previous = &Generation{id - 1, nil, NewFileManager(scenario, id - 1), NewScriptEditor(), [][2]int{}}
 	}
 
 	fileManager := NewFileManager(scenario, id)
-	scriptIds := make([]int, SCRIPTS_PER_GENERATION)
-	matchesPlayed := make(map[int][]int, len(scriptIds))
-
-	return &Generation{id, previous, fileManager, NewScriptEditor(), scriptIds, matchesPlayed}
+	return &Generation{id, previous, fileManager, NewScriptEditor(), [][2]int{}}
 }
 
 func (g *Generation) Initialize() {
@@ -68,15 +62,45 @@ func (g *Generation) Initialize() {
 		}
 	}
 
-	// Populate some record-keeping data structures that we use to track which scripts have played each other.
 	g.fileManager.ReadScriptIds()
-	copy(g.randomScriptIds, g.fileManager.ScriptIds)
-	rand.Shuffle(len(g.randomScriptIds), func(i, j int) {
-		g.randomScriptIds[i], g.randomScriptIds[j] = g.randomScriptIds[j], g.randomScriptIds[i]
+	g.calculateMatchups(g.fileManager.ScriptIds, MATCHES_PER_SCRIPT)
+}
+
+// Populate some record-keeping data structures that we use to track which scripts will play each other.
+// Note that, depending on the number of scripts and the value of matchesPerScript, some scripts might play more than
+// matchesPerScript matches — it's more of a minimum than a limit.
+func (g *Generation) calculateMatchups(scriptIds []int, matchesPerScript int) {
+	randomScriptIds := make([]int, 0, len(scriptIds))
+	randomScriptIds = append(randomScriptIds, scriptIds...)
+	rand.Shuffle(len(randomScriptIds), func(i, j int) {
+		randomScriptIds[i], randomScriptIds[j] = randomScriptIds[j], randomScriptIds[i]
 	})
-	for _, id := range g.fileManager.ScriptIds {
-		g.matchesPlayed[id] = make([]int, 0, MATCHES_PER_SCRIPT)
+
+	matchCounts := make(map[int]int, len(randomScriptIds))
+
+	findAvailableOpponent := func(id, startAt, maxMatches int) bool {
+		for i := 0; i < len(randomScriptIds); i++ {
+			index := (startAt + i) % len(randomScriptIds)
+			opponentId := randomScriptIds[index]
+
+			if matchCounts[opponentId] < maxMatches && id != opponentId {
+				matchCounts[id]++
+				matchCounts[opponentId]++
+				g.matchups = append(g.matchups, [2]int{id, opponentId})
+				return true
+			}
+		}
+		return false
 	}
+
+	for i, id := range randomScriptIds {
+		for n := 1; matchCounts[id] < matchesPerScript; n++ {
+			if !findAvailableOpponent(id, i + n, matchesPerScript) {
+				findAvailableOpponent(id, i + n, matchesPerScript + 1)
+			}
+		}
+	}
+	logger.Printf("randomScriptIds: %v", randomScriptIds)
 }
 
 func (g *Generation) CopyScriptFromPreviousGen(scriptId int) {
@@ -144,8 +168,11 @@ func (g *Generation) BestScores() []int {
 }
 
 func (g *Generation) Run(arena *Arena, vis Visualizer) {
-	for matchId := 0; matchId < SCRIPTS_PER_GENERATION * MATCHES_PER_SCRIPT; matchId++ {
-		scriptA, scriptB := g.pickTwoScripts()
+	for matchId := 0; ; matchId++ {
+		done, scriptA, scriptB := g.pickTwoScripts()
+		if done {
+			break
+		}
 		match := NewMatch(arena, vis, matchId, scriptA, scriptB)
 
 		for {
@@ -160,30 +187,13 @@ func (g *Generation) Run(arena *Arena, vis Visualizer) {
 	}
 }
 
-// Find two random scripts that haven't yet played each other and return their IDs.
-func (g *Generation) pickTwoScripts() (int, int) {
-	for id, played := range g.matchesPlayed {
-		for _, opponentId := range g.randomScriptIds {
-			if id != opponentId && !slices.Contains(played, opponentId) {
-				g.matchesPlayed[id] = append(g.matchesPlayed[id], opponentId)
-				g.matchesPlayed[opponentId] = append(g.matchesPlayed[opponentId], id)
-				g.removeScriptIfFinished(id)
-				g.removeScriptIfFinished(opponentId)
-
-				return id, opponentId
-			}
-		}
-	}
-
-	logger.Fatalf("Couldn't find two valid scripts to fight!\nmatchesPlayed: %v\nrandomScriptIds: %v\nfm ids: %v", g.matchesPlayed, g.randomScriptIds, g.fileManager.ScriptIds)
-	return -1, -1
-}
-
-// If a script has already played MATCHES_PER_SCRIPT matches, remove it from our data structures.
-func (g *Generation) removeScriptIfFinished(id int) {
-	if len(g.matchesPlayed[id]) >= MATCHES_PER_SCRIPT {
-		delete(g.matchesPlayed, id)
-		index := slices.Index(g.randomScriptIds, id)
-		slices.Delete(g.randomScriptIds, index, index + 1)
+// Find two scripts that haven't yet played each other and return their IDs.
+func (g *Generation) pickTwoScripts() (bool, int, int) {
+	if len(g.matchups) > 0 {
+		matchup := g.matchups[0]
+		g.matchups = g.matchups[1:]
+		return false, matchup[0], matchup[1]
+	} else {
+		return true, -1, -1
 	}
 }

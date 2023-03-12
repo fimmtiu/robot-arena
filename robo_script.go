@@ -377,7 +377,7 @@ func RS_Move(s *Script, args []*ScriptNode) Result {
 		return direction
 	}
 
-	dir := relativeToActualDirection(Direction(direction.Int % int(NumberOfDirections)), s.State.CurrentTeam())
+	dir := relativeToAbsoluteDirection(Direction(direction.Int % int(NumberOfDirections)), s.State.CurrentTeam())
 	destination := s.State.Arena.DestinationCellAfterMove(s.State.CurrentBot.Position, dir)
 	return Result{Type: ResultAction, Action: Action{Type: ActionMove, Target: destination}}
 }
@@ -388,7 +388,7 @@ func RS_CanMove(s *Script, args []*ScriptNode) Result {
 		return direction
 	}
 
-	dir := relativeToActualDirection(Direction(direction.Int % int(NumberOfDirections)), s.State.CurrentTeam())
+	dir := relativeToAbsoluteDirection(Direction(direction.Int % int(NumberOfDirections)), s.State.CurrentTeam())
 	destination := s.State.Arena.DestinationCellAfterMove(s.State.CurrentBot.Position, dir)
 	if s.State.CellIsEmpty(destination) {
 		return ResultTrue
@@ -407,7 +407,7 @@ func RS_Shoot(s *Script, args []*ScriptNode) Result {
 		return direction
 	}
 
-	dir := relativeToActualDirection(Direction(direction.Int % int(NumberOfDirections)), s.State.CurrentTeam())
+	dir := relativeToAbsoluteDirection(Direction(direction.Int % int(NumberOfDirections)), s.State.CurrentTeam())
 	pos := s.State.CurrentBot.Position
 	var target *Cell
 	switch dir {

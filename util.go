@@ -71,7 +71,8 @@ func intAbs(n int) int {
 // Each team considers "north" to be the direction of the enemy's goal, and "south" to be the direction of its own side.
 // This, plus the symmetry of the map, allows a script to run identically regardless of whether it's controlling Team A
 // or Team B.
-func relativeToActualDirection(relative Direction, team Team) Direction {
+func relativeToAbsoluteDirection(relative Direction, team Team) Direction {
+	relative = Direction(intAbs(int(relative)))
 	if team == TeamA {
 		switch relative {
 		case North: return East
