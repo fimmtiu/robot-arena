@@ -109,31 +109,22 @@ func (g *Generation) calculateMatchups(scriptIds []int, matchesPerScript int) {
 
 func (g *Generation) CopyScriptFromPreviousGen(scriptId int) {
 	code := g.Previous.fileManager.ScriptCode(scriptId)
-
-	file := g.fileManager.NewScriptFile()
-	file.WriteString(code)
-	file.Close()
+	g.fileManager.WriteNewScript(code)
 }
 
 func (g *Generation) MakeNewRandomScript() {
 	code := g.scriptEditor.RandomScript(MIN_EXPRS_PER_SCRIPT)
-	file := g.fileManager.NewScriptFile()
-	file.WriteString(code)
-	file.Close()
+	g.fileManager.WriteNewScript(code)
 }
 
 func (g *Generation) MutateScript(scriptId int) {
 	code := g.scriptEditor.MutateScript(g.fileManager.ScriptCode(scriptId))
-	file := g.fileManager.NewScriptFile()
-	file.WriteString(code)
-	file.Close()
+	g.fileManager.WriteNewScript(code)
 }
 
 func (g *Generation) SpliceScripts(scriptA, scriptB int) {
 	code := g.scriptEditor.SpliceScripts(g.fileManager.ScriptCode(scriptA), g.fileManager.ScriptCode(scriptB))
-	file := g.fileManager.NewScriptFile()
-	file.WriteString(code)
-	file.Close()
+	g.fileManager.WriteNewScript(code)
 }
 
 type ScriptScore struct {

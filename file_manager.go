@@ -68,6 +68,12 @@ func (fm *FileManager) ScriptsDir() string {
 	return fmt.Sprintf("scenario/%s/gen_%d/scripts", fm.Scenario, fm.Generation)
 }
 
+func (fm *FileManager) WriteNewScript(code string) {
+	file := fm.NewScriptFile()
+	file.WriteString(code)
+	file.Close()
+}
+
 func (fm *FileManager) NewScriptFile() *os.File {
 	highestId := 1
 	if len(fm.ScriptIds) > 0 {
