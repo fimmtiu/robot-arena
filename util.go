@@ -1,6 +1,11 @@
 package main
 
-import "strconv"
+import (
+	"fmt"
+	"path/filepath"
+	"sort"
+	"strconv"
+)
 
 // A basic implementation of Bresenham's line drawing algorithm. Calls the user-provided callback on each coordinate
 // pair that's part of the line. This will be used for tons of stuff, from calculating visibility to drawing actual
@@ -98,4 +103,28 @@ func strToInt(s string) int {
 		logger.Fatalf("Can't convert string to number: \"%s\", %v", s, err)
 	}
 	return number
+}
+
+func CurrentHighestGeneration(scenario string) int {
+	generations := []int{}
+	pattern := fmt.Sprintf("scenario/%s/gen_*", scenario)
+	dirnames, err := filepath.Glob(pattern)
+	if err != nil {
+		logger.Fatalf("Can't glob %s: %v", pattern, err)
+	}
+
+	for _, dirname := range dirnames {
+		submatches := scriptIdRegexp.FindStringSubmatch(dirname)
+		if len(submatches) != 2 {
+			logger.Fatalf("Unparseable name in scenario directory: %v", dirname)
+		}
+		number := strToInt(submatches[0])
+		logger.Printf("    dirname '%s' => %d", dirname, number)
+
+		generations = append(generations, number)
+	}
+
+	sort.Ints(generations)
+	logger.Printf("generations int: %v", generations)
+	return generations[len(generations)-1]
 }

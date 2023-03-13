@@ -29,10 +29,11 @@ func main() {
 	scenario := os.Args[1]
 	genCount := strToInt(os.Args[2])
 
-	for i := 1; i <= genCount; i++ {
-		fileManager = NewFileManager(scenario, i)
-		gen := NewGeneration(scenario, i)
+	for i := 0; i < genCount; i++ {
+		// fileManager = NewFileManager(scenario, i)
+		gen := NewHighestGeneration(scenario)
 		gen.Initialize()
+		logger.Printf("Running generation %d...", gen.Id)
 		gen.Run(arena, getVisualizer())
 	}
 

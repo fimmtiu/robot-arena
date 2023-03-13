@@ -8,7 +8,8 @@ import (
 )
 
 const MIN_EXPRS_PER_SCRIPT = 20  // FIXME: Later, let's use the average size of scripts in the generation instead of a constant
-const MUTATIONS_PER_SCRIPT = 2 // should this be random?
+const MUTATIONS_PER_SCRIPT = 2   // should this be random?
+const MUTATION_SIZE = 10         // should this be random?
 const MAX_LINE_LEN = 40
 const INTEGER_PERCENT = 0.3  // 30 percent of all randomly generated nodes will be integers.
 
@@ -33,22 +34,26 @@ func NewScriptEditor() *ScriptEditor {
 	return &ScriptEditor{}
 }
 
-func (editor *ScriptEditor) RandomScript() string {
-	script := editor.randomNode()
-	for countExpressions(script) < MIN_EXPRS_PER_SCRIPT {
-		script = editor.wrapNode(script)
-	}
-	return editor.FormatScript(script)
+func (editor *ScriptEditor) RandomScript(minExprs int) string {
+	return editor.FormatScript(editor.RandomTree(minExprs))
 }
 
-func (editor *ScriptEditor) randomNode() *ScriptNode {
+func (editor *ScriptEditor) RandomTree(minExprs int) *ScriptNode {
+	script := editor.makeRandomNode()
+	for countExpressions(script) < minExprs {
+		script = editor.wrapNode(script)
+	}
+	return script
+}
+
+func (editor *ScriptEditor) makeRandomNode() *ScriptNode {
 	if rand.Float32() < INTEGER_PERCENT {
 		return &ScriptNode{Type: Int, N: randomInt()}
 	} else {
 		randFunction := AllFunctions[rand.Intn(len(AllFunctions))]
 		node := &ScriptNode{Type: Expr, Children: []*ScriptNode{{Type: FuncName, Func: randFunction}}}
 		for i := 0; i < randFunction.Arity; i++ {
-			node.Children = append(node.Children, editor.randomNode())
+			node.Children = append(node.Children, editor.makeRandomNode())
 		}
 		return node
 	}
@@ -84,7 +89,7 @@ func (editor *ScriptEditor) wrapNode(node *ScriptNode) *ScriptNode {
 				if i == insertAt {
 					expr.Children = append(expr.Children, node)
 				} else {
-					expr.Children = append(expr.Children, editor.randomNode())
+					expr.Children = append(expr.Children, editor.makeRandomNode())
 				}
 			}
 			return expr
@@ -93,11 +98,46 @@ func (editor *ScriptEditor) wrapNode(node *ScriptNode) *ScriptNode {
 }
 
 func (editor *ScriptEditor) MutateScript(script string) string {
-	return "FIXME MUTATE WHATEVER"
+	tree := ParseScript(script)
+	replacement := editor.RandomTree(MUTATION_SIZE)
+	replaceRandomNode(tree, replacement)
+	return editor.FormatScript(tree)
 }
 
 func (editor *ScriptEditor) SpliceScripts(scriptA, scriptB string) string {
-	return "FIXME SPLICE WHATEVERS"
+	treeA, treeB := ParseScript(scriptA), ParseScript(scriptB)
+	replacement := chooseRandomLocation(treeB).Node
+
+	replaceRandomNode(treeA, replacement)
+	return editor.FormatScript(treeA)
+}
+
+type TreeLocation struct {
+	Node *ScriptNode
+	Parent *ScriptNode
+	Index int
+}
+
+func linearizeChildren(tree *ScriptNode) []TreeLocation {
+	list := []TreeLocation{}
+	for i, node := range tree.Children {
+		location := TreeLocation{Node: node, Parent: tree, Index: i}
+		list = append(list, location)
+		if node.Type == Expr {
+			list = append(list, linearizeChildren(node)...)
+		}
+	}
+	return list
+}
+
+func chooseRandomLocation(tree *ScriptNode) TreeLocation {
+	nodes := linearizeChildren(tree)
+	return nodes[rand.Intn(len(nodes))]
+}
+
+func replaceRandomNode(tree, replacement *ScriptNode) {
+	randomLocation := chooseRandomLocation(tree)
+	randomLocation.Parent.Children[randomLocation.Index] = replacement
 }
 
 func (editor *ScriptEditor) recursiveFormat(node *ScriptNode, indentLevel int) string {

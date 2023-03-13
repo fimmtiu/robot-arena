@@ -68,30 +68,6 @@ func (fm *FileManager) ScriptsDir() string {
 	return fmt.Sprintf("scenario/%s/gen_%d/scripts", fm.Scenario, fm.Generation)
 }
 
-func (fm *FileManager) currentHighestGeneration() int {
-	generations := []int{}
-	pattern := fmt.Sprintf("scenario/%s/gen_*", fm.Scenario)
-	dirnames, err := filepath.Glob(pattern)
-	if err != nil {
-		logger.Fatalf("Can't glob %s: %v", pattern, err)
-	}
-
-	for _, dirname := range dirnames {
-		submatches := scriptIdRegexp.FindStringSubmatch(dirname)
-		if len(submatches) != 2 {
-			logger.Fatalf("Unparseable name in scenario directory: %v", dirname)
-		}
-		number := strToInt(submatches[0])
-		logger.Printf("    dirname '%s' => %d", dirname, number)
-
-		generations = append(generations, number)
-	}
-
-	sort.Ints(generations)
-	logger.Printf("generations int: %v", generations)
-	return generations[len(generations)-1]
-}
-
 func (fm *FileManager) NewScriptFile() *os.File {
 	highestId := 1
 	if len(fm.ScriptIds) > 0 {
@@ -206,8 +182,8 @@ func (fm *FileManager) EachResultRow(callback ResultProcessor) {
 		} else if err != nil {
 			logger.Fatalf("Can't read line from %s: %v", path, err)
 		}
-		strColumns := strings.Split(row, ",")
-		columns := make([]int, 0, len(strColumns))
+		strColumns := strings.Split(strings.TrimSpace(row), ",")
+		columns := make([]int, len(strColumns))
 		for i, str := range strColumns {
 			columns[i] = strToInt(str)
 		}
