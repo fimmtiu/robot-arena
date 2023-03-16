@@ -25,7 +25,7 @@ type Cell struct {
 	Y int
 	Type CellType
 	Team Team
-	VisibleCells []*Cell
+	VisibleCells map[*Cell]bool
 
 	// Statistics for building histogram maps of activity in the arena.
 	Moves uint
@@ -48,14 +48,9 @@ func (c *Cell) BlocksVision() bool {
 	return c.Type == WallCell
 }
 
-// If this is too slow, we could make it a map instead.
 func (c *Cell) VisibleFrom(c2 *Cell) bool {
-	for _, vc := range c.VisibleCells {
-		if vc == c2 {
-			return true
-		}
-	}
-	return false
+	_, found := c.VisibleCells[c2]
+	return found
 }
 
 type Arena struct {
@@ -133,7 +128,7 @@ func (a *Arena) calculateVisibility() {
 
 	for i := 0; i < len(a.Cells); i++ {
 		cell := &a.Cells[i]
-		cell.VisibleCells = make([]*Cell, 0)
+		cell.VisibleCells = make(map[*Cell]bool, 0)
 
 		for j := 0; j < len(a.Cells); j++ {
 			otherCell := &a.Cells[j]
@@ -143,7 +138,7 @@ func (a *Arena) calculateVisibility() {
 					return false
 				} else {
 					visibleCells++
-					cell.VisibleCells = append(cell.VisibleCells, c)
+					cell.VisibleCells[c] = true
 					return true
 				}
 			})
@@ -153,12 +148,7 @@ func (a *Arena) calculateVisibility() {
 }
 
 func (a *Arena) CanSee(src *Cell, dest *Cell) bool {
-	for _, cell := range src.VisibleCells {
-		if cell == dest {
-			return true
-		}
-	}
-	return false
+	return src.VisibleFrom(dest)
 }
 
 // Manhattan distance between two points. Working with ints keeps things simple.
