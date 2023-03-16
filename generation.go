@@ -10,8 +10,10 @@ import (
 type Generation struct {
 	Id int
 	Previous *Generation
-	fileManager *FileManager
+	FileManager *FileManager
 	scriptEditor *ScriptEditor
+	Arena *Arena
+	Visualizer Visualizer
 	matchups [][2]int   // A list of [scriptA, scriptB] pairs.
 }
 
@@ -31,14 +33,17 @@ func NewHighestGeneration(scenario string) *Generation {
 func NewGeneration(scenario string, id int) *Generation {
 	var previous *Generation = nil
 	if id > 1 {
-		previous = &Generation{id - 1, nil, NewFileManager(scenario, id - 1), NewScriptEditor(), [][2]int{}}
+		previous = &Generation{id - 1, nil, NewFileManager(scenario, id - 1), NewScriptEditor(), nil, nil, [][2]int{}}
 	}
 
 	fileManager := NewFileManager(scenario, id)
-	return &Generation{id, previous, fileManager, NewScriptEditor(), [][2]int{}}
+	return &Generation{id, previous, fileManager, NewScriptEditor(), nil, nil, [][2]int{}}
 }
 
-func (g *Generation) Initialize() {
+func (g *Generation) Initialize(arena *Arena, vis Visualizer) {
+	g.Arena = arena
+	g.Visualizer = vis
+
 	// Ensure that we have a minimum number of scripts in the scripts folder.
 	if g.Previous == nil {
 		logger.Printf("Gen %d: Creating %d new random scripts", g.Id, SCRIPTS_PER_GENERATION)
@@ -58,17 +63,23 @@ func (g *Generation) Initialize() {
 		for ; count < SCRIPTS_PER_GENERATION; count++ {
 			n := rand.Float32()
 			if n < RANDOM_PERCENT {
+				logger.Printf("Generating new random script")
 				g.MakeNewRandomScript()
 			} else if n < RANDOM_PERCENT + MUTATE_PERCENT {
-				g.MutateScript(best[rand.Intn(len(best))])
+				randomScript := best[rand.Intn(len(best))]
+				logger.Printf("Mutating script %d", randomScript)
+				g.MutateScript(randomScript)
 			} else {
-				g.SpliceScripts(best[rand.Intn(len(best))], best[rand.Intn(len(best))])
+				randomScriptA := best[rand.Intn(len(best))]
+				randomScriptB := best[rand.Intn(len(best))]
+				logger.Printf("Splicing a node from %d into %d", randomScriptB, randomScriptA)
+				g.SpliceScripts(randomScriptA, randomScriptB)
 			}
 		}
 	}
 
-	g.fileManager.ReadScriptIds()
-	g.calculateMatchups(g.fileManager.ScriptIds, MATCHES_PER_SCRIPT)
+	g.FileManager.ReadScriptIds()
+	g.calculateMatchups(g.FileManager.ScriptIds, MATCHES_PER_SCRIPT)
 }
 
 // Populate some record-keeping data structures that we use to track which scripts will play each other.
@@ -108,23 +119,23 @@ func (g *Generation) calculateMatchups(scriptIds []int, matchesPerScript int) {
 }
 
 func (g *Generation) CopyScriptFromPreviousGen(scriptId int) {
-	code := g.Previous.fileManager.ScriptCode(scriptId)
-	g.fileManager.WriteNewScript(code)
+	code := g.Previous.FileManager.ScriptCode(scriptId)
+	g.FileManager.WriteNewScript(code)
 }
 
 func (g *Generation) MakeNewRandomScript() {
 	code := g.scriptEditor.RandomScript(MIN_EXPRS_PER_SCRIPT)
-	g.fileManager.WriteNewScript(code)
+	g.FileManager.WriteNewScript(code)
 }
 
 func (g *Generation) MutateScript(scriptId int) {
-	code := g.scriptEditor.MutateScript(g.fileManager.ScriptCode(scriptId))
-	g.fileManager.WriteNewScript(code)
+	code := g.scriptEditor.MutateScript(g.Previous.FileManager.ScriptCode(scriptId))
+	g.FileManager.WriteNewScript(code)
 }
 
 func (g *Generation) SpliceScripts(scriptA, scriptB int) {
-	code := g.scriptEditor.SpliceScripts(g.fileManager.ScriptCode(scriptA), g.fileManager.ScriptCode(scriptB))
-	g.fileManager.WriteNewScript(code)
+	code := g.scriptEditor.SpliceScripts(g.Previous.FileManager.ScriptCode(scriptA), g.Previous.FileManager.ScriptCode(scriptB))
+	g.FileManager.WriteNewScript(code)
 }
 
 type ScriptScore struct {
@@ -136,9 +147,9 @@ type ScriptScore struct {
 
 // Returns the IDs of the top-scoring KEEP_PERCENT scripts.
 func (g *Generation) BestScores() []int {
-	scores := make([]ScriptScore, len(g.fileManager.ScriptIds))
+	scores := make([]ScriptScore, len(g.FileManager.ScriptIds))
 
-	g.fileManager.EachResultRow(func (matchId, scriptA, scriptB, scoreA, scoreB, ticks int) {
+	g.FileManager.EachResultRow(func (matchId, scriptA, scriptB, scoreA, scoreB, ticks int) {
 		scores[scriptA - 1].Id = scriptA
 		scores[scriptA - 1].Sum += scoreA
 		scores[scriptA - 1].Count++
@@ -162,13 +173,13 @@ func (g *Generation) BestScores() []int {
 	return ids
 }
 
-func (g *Generation) Run(arena *Arena, vis Visualizer) {
+func (g *Generation) Run() {
 	for matchId := 0; ; matchId++ {
 		done, scriptA, scriptB := g.pickTwoScripts()
 		if done {
 			break
 		}
-		match := NewMatch(arena, vis, matchId, scriptA, scriptB)
+		match := NewMatch(g, matchId, scriptA, scriptB)
 
 		for {
 			if match.RunTick() {   // Returns true when the match is over
@@ -177,8 +188,8 @@ func (g *Generation) Run(arena *Arena, vis Visualizer) {
 		}
 
 		logger.Printf("Match %d: script %d: %d points, script %d: %d points", matchId, scriptA, match.Scores[TeamA], scriptB, match.Scores[TeamB])
-		g.fileManager.writeCellStatistics(match)
-		g.fileManager.writeMatchOutcome(match)
+		g.FileManager.writeCellStatistics(match)
+		g.FileManager.writeMatchOutcome(match)
 	}
 }
 

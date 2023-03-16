@@ -132,7 +132,12 @@ func linearizeChildren(tree *ScriptNode) []TreeLocation {
 
 func chooseRandomLocation(tree *ScriptNode) TreeLocation {
 	nodes := linearizeChildren(tree)
-	return nodes[rand.Intn(len(nodes))]
+	for {
+		randomNode := nodes[rand.Intn(len(nodes))]
+		if randomNode.Node.Type != FuncName {
+			return randomNode
+		}
+	}
 }
 
 func replaceRandomNode(tree, replacement *ScriptNode) {

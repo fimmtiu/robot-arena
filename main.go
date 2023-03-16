@@ -4,6 +4,8 @@ import (
 	"log"
 	"os"
 	"strings"
+
+	"github.com/pkg/profile"
 )
 
 const BOTS_PER_TEAM = 5
@@ -28,13 +30,14 @@ func main() {
 
 	scenario := os.Args[1]
 	genCount := strToInt(os.Args[2])
+	defer profile.Start(profile.ProfilePath(".")).Stop()
 
 	for i := 0; i < genCount; i++ {
 		// fileManager = NewFileManager(scenario, i)
 		gen := NewHighestGeneration(scenario)
-		gen.Initialize()
+		gen.Initialize(arena, getVisualizer())
 		logger.Printf("Running generation %d...", gen.Id)
-		gen.Run(arena, getVisualizer())
+		gen.Run()
 	}
 
 	logger.Printf("Done!")

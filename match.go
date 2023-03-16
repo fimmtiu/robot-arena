@@ -42,7 +42,7 @@ type Goal struct {
 type Match struct {
 	Rand *rand.Rand
 	State *GameState
-	Visualizer Visualizer
+	Generation *Generation
 	Id int
 	ScriptA int
 	ScriptB int
@@ -52,18 +52,18 @@ type Match struct {
 var currentMatch *Match
 var turnSequence = []int{0, 5, 1, 6, 2, 7, 3, 8, 4, 9}  // Alternates bots from different teams
 
-func NewMatch(arena *Arena, visualizer Visualizer, id int, scriptId_A int, scriptId_B int) *Match {
-	arena.Reset()
+func NewMatch(generation *Generation, id int, scriptId_A int, scriptId_B int) *Match {
+	generation.Arena.Reset()
 	rng := rand.New(rand.NewSource(int64(id)))
-	state := NewGameState(arena)
-	match := &Match{rng, state, visualizer, id,  scriptId_A, scriptId_B, [2]int{0, 0}}
+	state := NewGameState(generation.Arena)
+	match := &Match{rng, state, generation, id,  scriptId_A, scriptId_B, [2]int{0, 0}}
 
-	scripts := [2]Script{fileManager.LoadScript(state, scriptId_A), fileManager.LoadScript(state, scriptId_B)}
+	scripts := [2]Script{generation.FileManager.LoadScript(state, scriptId_A), generation.FileManager.LoadScript(state, scriptId_B)}
 	for i, bot := range state.Bots {
 		state.Bots[i].Script = scripts[bot.Team]
 	}
 
-	visualizer.Init(state)
+	generation.Visualizer.Init(state)
 	return match
 }
 
@@ -73,11 +73,11 @@ func (m *Match) RunTick() bool {
 		if m.State.Bots[i].Alive {
 			m.RunOneBot(&m.State.Bots[i])
 		} else {
-			m.Visualizer.NoChange()
+			m.Generation.Visualizer.NoChange()
 		}
 	}
 
-	m.Visualizer.TickComplete()
+	m.Generation.Visualizer.TickComplete()
 	m.State.Tick++
 	if m.State.Tick >= MAX_TICKS_PER_GAME {  // Penalize both teams if the game runs too long.
 		m.Scores[TeamA] -= 5
@@ -86,7 +86,7 @@ func (m *Match) RunTick() bool {
 
 	if m.State.IsGameOver() {
 		logger.Printf("Final score: Team A %d, Team B %d.", m.Scores[TeamA], m.Scores[TeamB])
-		m.Visualizer.Finish()
+		m.Generation.Visualizer.Finish()
 		return true
 	}
 	return false
@@ -104,7 +104,7 @@ func (m *Match) RunOneBot(bot *Bot) {
 		m.BotShoot(bot, action)
 	}
 
-	m.Visualizer.Update(action)
+	m.Generation.Visualizer.Update(action)
 }
 
 // If the space is passable but another bot is in the space, it's the same as hitting a wall.

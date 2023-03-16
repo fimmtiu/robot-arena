@@ -7,7 +7,7 @@ import (
 )
 
 func TestCalculateMatchups(t *testing.T) {
-	g := &Generation{1, nil, nil, nil, [][2]int{}}
+	g := &Generation{1, nil, nil, nil, nil, nil, [][2]int{}}
 	scriptIds := []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 	matchesPerScript := 5
 	matchCounts := make(map[int]int, len(scriptIds))

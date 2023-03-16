@@ -114,17 +114,22 @@ func CurrentHighestGeneration(scenario string) int {
 	}
 
 	for _, dirname := range dirnames {
-		submatches := scriptIdRegexp.FindStringSubmatch(dirname)
+		submatches := generationRegexp.FindStringSubmatch(dirname)
+		// logger.Printf("submatches for '%s': %v", dirname, submatches)
 		if len(submatches) != 2 {
 			logger.Fatalf("Unparseable name in scenario directory: %v", dirname)
 		}
-		number := strToInt(submatches[0])
-		logger.Printf("    dirname '%s' => %d", dirname, number)
+		number := strToInt(submatches[1])
+		// logger.Printf("    dirname '%s' => %d", dirname, number)
 
 		generations = append(generations, number)
 	}
 
-	sort.Ints(generations)
-	logger.Printf("generations int: %v", generations)
-	return generations[len(generations)-1]
+	if len(generations) == 0 {
+		return 0
+	} else {
+		sort.Ints(generations)
+		// logger.Printf("generations int: %v", generations)
+		return generations[len(generations)-1]
+	}
 }
