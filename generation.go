@@ -17,8 +17,8 @@ type Generation struct {
 	matchups [][2]int   // A list of [scriptA, scriptB] pairs.
 }
 
-const SCRIPTS_PER_GENERATION = 100
-const MATCHES_PER_SCRIPT = 3
+const SCRIPTS_PER_GENERATION = 10000
+const MATCHES_PER_SCRIPT = 6
 
 const KEEP_PERCENT = 0.20
 const RANDOM_PERCENT = 0.35

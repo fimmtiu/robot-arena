@@ -174,7 +174,8 @@ func InitScript() {
 
 	// Actions
 	FunctionLookupTable["move"] = Function{"move", 1, RS_Move}
-	FunctionLookupTable["wait"] = Function{"wait", 0, RS_Wait}
+	// Commenting this out for a bit to see if it improves fitness.
+	// FunctionLookupTable["wait"] = Function{"wait", 0, RS_Wait}
 	FunctionLookupTable["shoot"] = Function{"shoot", 1, RS_Shoot}
 	FunctionLookupTable["shoot-nearest"] = Function{"shoot-nearest", 0, RS_ShootNearest}
 
