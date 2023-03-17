@@ -198,3 +198,18 @@ func (fm *FileManager) EachResultRow(callback ResultProcessor) {
 
 	file.Close()
 }
+
+func (fm *FileManager) MatchScriptIds(matchId int) (int, int) {
+	scriptA, scriptB := -1, -1
+
+	fm.EachResultRow(func (m, a, b, _, _, _ int) {
+		if m == matchId {
+			scriptA, scriptB = a, b
+		}
+	})
+
+	if scriptA < 0 || scriptB < 0 {
+		logger.Fatalf("Can't find a match in generation %d with id %d!", fm.Generation, matchId)
+	}
+	return scriptA, scriptB
+}

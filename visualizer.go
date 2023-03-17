@@ -237,7 +237,7 @@ func (vis *Mp4Visualizer) TickComplete() {
 }
 
 func (vis *Mp4Visualizer) Finish() {
-	ffmpegCommand := fmt.Sprintf("ffmpeg -y -framerate 30 -pattern_type glob -i '%s' -c:v libx264 -pix_fmt yuv420p %s/game.mp4", vis.img.WildCard(), vis.FileManager.GenerationDir())
+	ffmpegCommand := fmt.Sprintf("ffmpeg -y -framerate 30 -pattern_type glob -i '%s' -c:v libx264 -pix_fmt yuv420p %s", vis.img.WildCard(), vis.OutputFile())
 	cmd := exec.Command("/bin/sh", "-c", ffmpegCommand)
 	err := cmd.Run()
 	if err != nil {
@@ -248,4 +248,8 @@ func (vis *Mp4Visualizer) Finish() {
 	if err := os.RemoveAll(vis.img.Dir); err != nil {
 		logger.Fatalf("Could not destroy temporary directory %s: %v", vis.img.Dir, err)
 	}
+}
+
+func (vis *Mp4Visualizer) OutputFile() string {
+	return fmt.Sprintf("%s/game.mp4", vis.FileManager.GenerationDir())
 }

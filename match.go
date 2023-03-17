@@ -67,6 +67,14 @@ func NewMatch(generation *Generation, id int, scriptId_A int, scriptId_B int) *M
 	return match
 }
 
+func (m *Match) Run() {
+	for {
+		if m.RunTick() {   // Returns true when the match is over
+			break
+		}
+	}
+}
+
 // Returns true if the game is over and false if it's still going.
 func (m *Match) RunTick() bool {
 	for _, i := range turnSequence {

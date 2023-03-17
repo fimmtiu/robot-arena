@@ -45,35 +45,32 @@ func (g *Generation) Initialize(arena *Arena, vis Visualizer) {
 	g.Visualizer = vis
 
 	// Ensure that we have a minimum number of scripts in the scripts folder.
-	if g.Previous == nil {
-		logger.Printf("Gen %d: Creating %d new random scripts", g.Id, SCRIPTS_PER_GENERATION)
-		for i := 0; i < SCRIPTS_PER_GENERATION; i++ {
-			g.MakeNewRandomScript()
-		}
-	} else {
-		best := g.Previous.BestScores()
-		var count int
+	g.FileManager.ReadScriptIds()
+	if len(g.FileManager.ScriptIds) < SCRIPTS_PER_GENERATION {
+		if g.Previous == nil {
+				logger.Printf("Gen %d: Creating %d new random scripts", g.Id, SCRIPTS_PER_GENERATION)
+				for i := 0; i < SCRIPTS_PER_GENERATION; i++ {
+					g.MakeNewRandomScript()
+				}
+		} else {
+			best := g.Previous.BestScores()
+			var count int
 
-		logger.Printf("Gen %d: Copying the %d best scripts from generation %d", g.Id, len(best), g.Previous.Id)
-		for count = 0; count < len(best); count++ {
-			g.CopyScriptFromPreviousGen(best[count])
-			count++
-		}
-		logger.Printf("Gen %d: Mangling %d scripts", g.Id, SCRIPTS_PER_GENERATION - count)
-		for ; count < SCRIPTS_PER_GENERATION; count++ {
-			n := rand.Float32()
-			if n < RANDOM_PERCENT {
-				logger.Printf("Generating new random script")
-				g.MakeNewRandomScript()
-			} else if n < RANDOM_PERCENT + MUTATE_PERCENT {
-				randomScript := best[rand.Intn(len(best))]
-				logger.Printf("Mutating script %d", randomScript)
-				g.MutateScript(randomScript)
-			} else {
-				randomScriptA := best[rand.Intn(len(best))]
-				randomScriptB := best[rand.Intn(len(best))]
-				logger.Printf("Splicing a node from %d into %d", randomScriptB, randomScriptA)
-				g.SpliceScripts(randomScriptA, randomScriptB)
+			logger.Printf("Gen %d: Copying the %d best scripts from generation %d", g.Id, len(best), g.Previous.Id)
+			for count = 0; count < len(best); count++ {
+				g.CopyScriptFromPreviousGen(best[count])
+				count++
+			}
+			logger.Printf("Gen %d: Mangling %d scripts", g.Id, SCRIPTS_PER_GENERATION - count)
+			for ; count < SCRIPTS_PER_GENERATION; count++ {
+				n := rand.Float32()
+				if n < RANDOM_PERCENT {
+					g.MakeNewRandomScript()
+				} else if n < RANDOM_PERCENT + MUTATE_PERCENT {
+					g.MutateScript(best[rand.Intn(len(best))])
+				} else {
+					g.SpliceScripts(best[rand.Intn(len(best))], best[rand.Intn(len(best))])
+				}
 			}
 		}
 	}
@@ -180,12 +177,7 @@ func (g *Generation) Run() {
 			break
 		}
 		match := NewMatch(g, matchId, scriptA, scriptB)
-
-		for {
-			if match.RunTick() {   // Returns true when the match is over
-				break
-			}
-		}
+		match.Run()
 
 		logger.Printf("Match %d: script %d: %d points, script %d: %d points", matchId, scriptA, match.Scores[TeamA], scriptB, match.Scores[TeamB])
 		g.FileManager.writeCellStatistics(match)
