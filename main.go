@@ -9,7 +9,7 @@ import (
 )
 
 const BOTS_PER_TEAM = 5
-const MAX_TICKS_PER_GAME = 200 // I'll crank this up to 2,000 after I'm done testing.
+const MAX_TICKS_PER_GAME = 200 // I'll crank this up higher after I'm done testing.
 
 var logger *log.Logger
 
@@ -41,6 +41,7 @@ func main() {
 			logger.Printf("Running generation %d...", gen.Id)
 			gen.Run()
 		}
+		NewResultsViewer(scenario).GenerateResults()
 
 	case "view":
 		genId := strToInt(os.Args[3])
@@ -49,7 +50,7 @@ func main() {
 		gen := NewGeneration(scenario, genId)
 		vis := NewMp4Visualizer(gen.FileManager)
 		gen.Initialize(arena, vis)
-		scriptA, scriptB := gen.FileManager.MatchScriptIds(matchId)
+		scriptA, scriptB := gen.FileManager.FindScriptIds(matchId)
 		match := NewMatch(gen, matchId, scriptA, scriptB)
 		match.Run()
 		logger.Printf("Match %d: script %d: %d points, script %d: %d points", matchId, scriptA, match.Scores[TeamA], scriptB, match.Scores[TeamB])

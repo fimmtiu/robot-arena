@@ -100,6 +100,20 @@ func (fm *FileManager) ScriptCode(id int) string {
 	return string(source)
 }
 
+func (fm *FileManager) AverageScriptSize() int {
+	sum := 0
+	for _, id := range fm.ScriptIds {
+		path := fmt.Sprintf("%s/%d.l", fm.ScriptsDir(), id)
+		stat, err := os.Stat(path)
+		if err != nil {
+			logger.Fatalf("Couldn't stat script %s: %v", path, err)
+		}
+		sum += int(stat.Size())
+	}
+
+	return sum / len(fm.ScriptIds)
+}
+
 func (fm *FileManager) LoadScript(state *GameState, id int) Script {
 	source := fm.ScriptCode(id)
 	return Script{ParseScript(source), state}
@@ -199,7 +213,7 @@ func (fm *FileManager) EachResultRow(callback ResultProcessor) {
 	file.Close()
 }
 
-func (fm *FileManager) MatchScriptIds(matchId int) (int, int) {
+func (fm *FileManager) FindScriptIds(matchId int) (int, int) {
 	scriptA, scriptB := -1, -1
 
 	fm.EachResultRow(func (m, a, b, _, _, _ int) {
