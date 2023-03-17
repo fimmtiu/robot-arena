@@ -34,7 +34,8 @@ type ImageWriter struct {
 	lightRedSquare image.Image
 	lightBlueSquare image.Image
 	lightGreenSquare image.Image
-	laserSquare image.Image
+	redLaserSquare image.Image
+	blueLaserSquare image.Image
 }
 
 type NullVisualizer struct {
@@ -71,11 +72,11 @@ func NewImageWriter(prefix string, pixelsPerCell int) ImageWriter {
 
 	return ImageWriter{
 		dir, prefix, 0, pixelsPerCell,
-		makeSolidSquare(pixelsPerCell, 0, 0, 0), makeSolidSquare(pixelsPerCell, 255, 255, 255),
-		makeSolidSquare(pixelsPerCell, 0, 255, 0), makeSolidSquare(pixelsPerCell, 255, 0, 0),
-		makeSolidSquare(pixelsPerCell, 0, 0, 255), makeSolidSquare(pixelsPerCell, 255, 100, 100),
-		makeSolidSquare(pixelsPerCell, 100, 100, 255), makeSolidSquare(pixelsPerCell, 120, 255, 120),
-		makeSolidSquare(laserWidth, 64, 255, 64),
+		makeSolidSquare(pixelsPerCell, 0, 0, 0, 255), makeSolidSquare(pixelsPerCell, 255, 255, 255, 255),
+		makeSolidSquare(pixelsPerCell, 0, 255, 0, 255), makeSolidSquare(pixelsPerCell, 255, 0, 0, 255),
+		makeSolidSquare(pixelsPerCell, 0, 0, 255, 255), makeSolidSquare(pixelsPerCell, 255, 100, 100, 255),
+		makeSolidSquare(pixelsPerCell, 100, 100, 255, 255), makeSolidSquare(pixelsPerCell, 120, 255, 120, 255),
+		makeSolidSquare(laserWidth, 255, 0, 0, 128), makeSolidSquare(laserWidth, 0, 0, 255, 128),
 	}
 }
 
@@ -132,17 +133,23 @@ func (img *ImageWriter) WriteImage(state *GameState, action *Action) {
 		}
 	}
 
-	// Draw the lasers in a nice bright green. (This is not terribly efficient. Lots of overdraw.)
+	// Draw the semi-transparent lasers. (This is not terribly efficient. Lots of overdraw.)
 	if action != nil && action.Type == ActionShoot {
 		shooterX := state.CurrentBot.Position.X * img.PixelsPerCell + img.PixelsPerCell / 2
 		shooterY := state.CurrentBot.Position.Y * img.PixelsPerCell + img.PixelsPerCell / 2
 		targetX := action.Target.X * img.PixelsPerCell + img.PixelsPerCell / 2
 		targetY := action.Target.Y * img.PixelsPerCell + img.PixelsPerCell / 2
-		halfWidth := img.laserSquare.Bounds().Size().X / 2
+		var laserSquare image.Image
+		if state.CurrentBot.Team == TeamA {
+			laserSquare = img.redLaserSquare
+		} else {
+			laserSquare = img.blueLaserSquare
+		}
+		halfWidth := laserSquare.Bounds().Size().X / 2
 
 		BresenhamLine(shooterX, shooterY, targetX, targetY, func (x, y int) bool {
 			rect := image.Rect(x - halfWidth, y - halfWidth, x + halfWidth, y + halfWidth)
-			draw.Draw(frame, rect, img.laserSquare, swatch.Min, draw.Src)
+			draw.Draw(frame, rect, laserSquare, swatch.Min, draw.Src)
 			return true
 		})
 	}
@@ -158,11 +165,11 @@ func (img *ImageWriter) WriteImage(state *GameState, action *Action) {
 
 // We pre-generate some solid color swatches so that we can copy them over in big rectangles instead of laboriously
 // filling in each pixel on each frame.
-func makeSolidSquare(sideLen int, r, g, b uint8) image.Image {
+func makeSolidSquare(sideLen int, r, g, b, a uint8) image.Image {
 	square := image.NewRGBA(image.Rect(0, 0, sideLen, sideLen))
 	for x := 0; x < sideLen; x++ {
 		for y := 0; y < sideLen; y++ {
-			square.Set(x, y, color.RGBA{r, g, b, 255})
+			square.Set(x, y, color.RGBA{r, g, b, a})
 		}
 	}
 	return square
@@ -227,7 +234,7 @@ func (vis *Mp4Visualizer) Update(action Action) {
 }
 
 // We write images on the turns of dead robots so that the speed of the visualization stays consistent, instead of
-// speeding up the fewer robots are alive, Space Invaders-style.
+// speeding up as fewer robots are alive, Space Invaders-style.
 func (vis *Mp4Visualizer) NoChange() {
 	vis.img.WriteImage(vis.State, nil)
 }
