@@ -24,6 +24,7 @@ type ImageWriter struct {
 	Dir string
 	Prefix string
 	NextFileIndex int
+	PixelsPerCell int
 
 	blackSquare image.Image
 	whiteSquare image.Image
@@ -42,36 +43,38 @@ type NullVisualizer struct {
 
 // Uses ImageWriter to generate a bunch of images, one per tick, then stitches them together into an animated GIF.
 type GifVisualizer struct {
+	FileManager *FileManager
 	State *GameState
 	img ImageWriter
 }
 
 // Uses ImageWriter to generate a bunch of images, one per action, then stitches them together into a movie.
 type Mp4Visualizer struct {
+	FileManager *FileManager
 	State *GameState
 	img ImageWriter
 }
 
 // Each grid cell in the arena will be PIXELS_PER_CELL pixels wide in the output images.
-const PIXELS_PER_CELL = 16
+const DEFAULT_PIXELS_PER_CELL = 16
 
-func NewImageWriter(prefix string) ImageWriter {
+func NewImageWriter(prefix string, pixelsPerCell int) ImageWriter {
 	dir := fmt.Sprintf("/tmp/robot-arena-%d-%d", os.Getpid(), time.Now().UnixNano())
 	if err := os.Mkdir(dir, 0755); err != nil {
 		logger.Fatalf("Could not create temporary directory %s: %v", dir, err)
 	}
 
-	laserWidth := PIXELS_PER_CELL / 8
+	laserWidth := pixelsPerCell / 8
 	if laserWidth < 1 {
 		laserWidth = 1
 	}
 
 	return ImageWriter{
-		dir, prefix, 0,
-		makeSolidSquare(PIXELS_PER_CELL, 0, 0, 0), makeSolidSquare(PIXELS_PER_CELL, 255, 255, 255),
-		makeSolidSquare(PIXELS_PER_CELL, 0, 255, 0), makeSolidSquare(PIXELS_PER_CELL, 255, 0, 0),
-		makeSolidSquare(PIXELS_PER_CELL, 0, 0, 255), makeSolidSquare(PIXELS_PER_CELL, 255, 100, 100),
-		makeSolidSquare(PIXELS_PER_CELL, 100, 100, 255), makeSolidSquare(PIXELS_PER_CELL, 120, 255, 120),
+		dir, prefix, 0, pixelsPerCell,
+		makeSolidSquare(pixelsPerCell, 0, 0, 0), makeSolidSquare(pixelsPerCell, 255, 255, 255),
+		makeSolidSquare(pixelsPerCell, 0, 255, 0), makeSolidSquare(pixelsPerCell, 255, 0, 0),
+		makeSolidSquare(pixelsPerCell, 0, 0, 255), makeSolidSquare(pixelsPerCell, 255, 100, 100),
+		makeSolidSquare(pixelsPerCell, 100, 100, 255), makeSolidSquare(pixelsPerCell, 120, 255, 120),
 		makeSolidSquare(laserWidth, 64, 255, 64),
 	}
 }
@@ -91,14 +94,14 @@ func (img *ImageWriter) WildCard() string {
 func (img *ImageWriter) WriteImage(state *GameState, action *Action) {
 	width := state.Arena.Width
 	height := state.Arena.Height
-	frame := image.NewRGBA(image.Rect(0, 0, width * PIXELS_PER_CELL, height * PIXELS_PER_CELL))
-	swatch := image.Rect(0, 0, PIXELS_PER_CELL, PIXELS_PER_CELL)
+	frame := image.NewRGBA(image.Rect(0, 0, width * img.PixelsPerCell, height * img.PixelsPerCell))
+	swatch := image.Rect(0, 0, img.PixelsPerCell, img.PixelsPerCell)
 
 	// Draw the map
 	for x := 0; x < width; x++ {
 		for y := 0; y < height; y++ {
 			cell := state.Arena.Cells[x * height + y]
-			rect := image.Rect(x * PIXELS_PER_CELL, y * PIXELS_PER_CELL, (x + 1) * PIXELS_PER_CELL, (y + 1) * PIXELS_PER_CELL)
+			rect := image.Rect(x * img.PixelsPerCell, y * img.PixelsPerCell, (x + 1) * img.PixelsPerCell, (y + 1) * img.PixelsPerCell)
 			switch cell.Type {
 			case WallCell:
 				draw.Draw(frame, rect, img.blackSquare, swatch.Min, draw.Src)
@@ -112,8 +115,8 @@ func (img *ImageWriter) WriteImage(state *GameState, action *Action) {
 
 	// Draw the bots. Dead bots show up as a light color.
 	for _, bot := range state.Bots {
-		rect := image.Rect(bot.Position.X * PIXELS_PER_CELL, bot.Position.Y * PIXELS_PER_CELL,
-											(bot.Position.X + 1) * PIXELS_PER_CELL, (bot.Position.Y + 1) * PIXELS_PER_CELL)
+		rect := image.Rect(bot.Position.X * img.PixelsPerCell, bot.Position.Y * img.PixelsPerCell,
+											(bot.Position.X + 1) * img.PixelsPerCell, (bot.Position.Y + 1) * img.PixelsPerCell)
 		if bot.Team == TeamA {
 			if bot.Alive {
 				draw.Draw(frame, rect, img.redSquare, swatch.Min, draw.Src)
@@ -131,10 +134,10 @@ func (img *ImageWriter) WriteImage(state *GameState, action *Action) {
 
 	// Draw the lasers in a nice bright green. (This is not terribly efficient. Lots of overdraw.)
 	if action != nil && action.Type == ActionShoot {
-		shooterX := state.CurrentBot.Position.X * PIXELS_PER_CELL + PIXELS_PER_CELL / 2
-		shooterY := state.CurrentBot.Position.Y * PIXELS_PER_CELL + PIXELS_PER_CELL / 2
-		targetX := action.Target.X * PIXELS_PER_CELL + PIXELS_PER_CELL / 2
-		targetY := action.Target.Y * PIXELS_PER_CELL + PIXELS_PER_CELL / 2
+		shooterX := state.CurrentBot.Position.X * img.PixelsPerCell + img.PixelsPerCell / 2
+		shooterY := state.CurrentBot.Position.Y * img.PixelsPerCell + img.PixelsPerCell / 2
+		targetX := action.Target.X * img.PixelsPerCell + img.PixelsPerCell / 2
+		targetY := action.Target.Y * img.PixelsPerCell + img.PixelsPerCell / 2
 		halfWidth := img.laserSquare.Bounds().Size().X / 2
 
 		BresenhamLine(shooterX, shooterY, targetX, targetY, func (x, y int) bool {
@@ -175,8 +178,8 @@ func (vis *NullVisualizer) NoChange() {}
 func (vis *NullVisualizer) TickComplete() {}
 func (vis *NullVisualizer) Finish() {}
 
-func NewGifVisualizer() *GifVisualizer {
-	return &GifVisualizer{nil, NewImageWriter("tick")}
+func NewGifVisualizer(fm *FileManager) *GifVisualizer {
+	return &GifVisualizer{fm, nil, NewImageWriter("tick", DEFAULT_PIXELS_PER_CELL)}
 }
 
 func (vis *GifVisualizer) Init(state *GameState) {
@@ -200,17 +203,17 @@ func (vis *GifVisualizer) TickComplete() {
 }
 
 func (vis *GifVisualizer) Finish() {
-	convertCommand := fmt.Sprintf("convert -delay 20 -loop 0 %s %s/game.gif", vis.img.WildCard(), fileManager.GenerationDir())
+	convertCommand := fmt.Sprintf("convert -delay 20 -loop 0 %s %s/game.gif", vis.img.WildCard(), vis.FileManager.GenerationDir())
 	cmd := exec.Command("/bin/sh", "-c", convertCommand)
 	err := cmd.Run()
 	if err != nil {
 		logger.Fatalf("Failed to run 'convert': %v", err)
 	}
-	logger.Printf("Created GIF at %s/game.gif", fileManager.GenerationDir())
+	logger.Printf("Created GIF at %s/game.gif", vis.FileManager.GenerationDir())
 }
 
-func NewMp4Visualizer() *Mp4Visualizer {
-	return &Mp4Visualizer{nil, NewImageWriter("frame")}
+func NewMp4Visualizer(fm *FileManager) *Mp4Visualizer {
+	return &Mp4Visualizer{fm, nil, NewImageWriter("frame", DEFAULT_PIXELS_PER_CELL)}
 }
 
 func (vis *Mp4Visualizer) Init(state *GameState) {
@@ -234,13 +237,13 @@ func (vis *Mp4Visualizer) TickComplete() {
 }
 
 func (vis *Mp4Visualizer) Finish() {
-	ffmpegCommand := fmt.Sprintf("ffmpeg -y -framerate 30 -pattern_type glob -i '%s' -c:v libx264 -pix_fmt yuv420p %s/game.mp4", vis.img.WildCard(), fileManager.GenerationDir())
+	ffmpegCommand := fmt.Sprintf("ffmpeg -y -framerate 30 -pattern_type glob -i '%s' -c:v libx264 -pix_fmt yuv420p %s/game.mp4", vis.img.WildCard(), vis.FileManager.GenerationDir())
 	cmd := exec.Command("/bin/sh", "-c", ffmpegCommand)
 	err := cmd.Run()
 	if err != nil {
 		logger.Fatalf("Failed to run 'ffmpeg': %v", err)
 	}
-	logger.Printf("Created MP4 at %s/game.mp4", fileManager.GenerationDir())
+	logger.Printf("Created MP4 at %s/game.mp4", vis.FileManager.GenerationDir())
 
 	if err := os.RemoveAll(vis.img.Dir); err != nil {
 		logger.Fatalf("Could not destroy temporary directory %s: %v", vis.img.Dir, err)

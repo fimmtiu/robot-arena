@@ -13,9 +13,6 @@ const MAX_TICKS_PER_GAME = 200 // I'll crank this up to 2,000 after I'm done tes
 
 var logger *log.Logger
 
-// FIXME: Can we rearrange things so we don't need this global, where all file-related calls go through the current Generation?
-var fileManager *FileManager
-
 func init() {
 	logger = log.New(os.Stdout, "", log.Ldate | log.Ltime)
 	InitScript()
@@ -33,9 +30,8 @@ func main() {
 	defer profile.Start(profile.ProfilePath(".")).Stop()
 
 	for i := 0; i < genCount; i++ {
-		// fileManager = NewFileManager(scenario, i)
 		gen := NewHighestGeneration(scenario)
-		gen.Initialize(arena, getVisualizer())
+		gen.Initialize(arena, getVisualizer(gen))
 		logger.Printf("Running generation %d...", gen.Id)
 		gen.Run()
 	}
@@ -43,12 +39,12 @@ func main() {
 	logger.Printf("Done!")
 }
 
-func getVisualizer() Visualizer {
+func getVisualizer(gen *Generation) Visualizer {
 	switch strings.ToLower(os.Getenv("VIS")) {
 	case "gif":
-		return NewGifVisualizer()
+		return NewGifVisualizer(gen.FileManager)
 	case "mp4":
-		return NewMp4Visualizer()
+		return NewMp4Visualizer(gen.FileManager)
 	default:
 		return NewNullVisualizer()
 	}
