@@ -9,7 +9,8 @@ type GameState struct {
 }
 
 func NewGameState(arena *Arena) *GameState {
-	state := &GameState{arena, make([]Bot, BOTS_PER_TEAM * 2), [2]Goal{}, nil, 0}
+	state := NewEmptyGameState(arena)
+	state.Bots = make([]Bot, BOTS_PER_TEAM * 2)
 
 	// Team A occupies slots 0-4. Team B occupies slots 5-9.
 	for teamAindex := 0; teamAindex < BOTS_PER_TEAM; teamAindex++ {
@@ -25,9 +26,13 @@ func NewGameState(arena *Arena) *GameState {
 		state.Bots[teamBindex].Alive = true
 	}
 
+	return state
+}
+
+func NewEmptyGameState(arena *Arena) *GameState {
+	state := &GameState{arena, []Bot{}, [2]Goal{}, nil, 0}
 	state.Goals[TeamA] = Goal{Team: TeamA, Position: arena.Goals[TeamA], Alive: true}
 	state.Goals[TeamB] = Goal{Team: TeamB, Position: arena.Goals[TeamB], Alive: true}
-
 	return state
 }
 

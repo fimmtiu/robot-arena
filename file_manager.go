@@ -21,6 +21,7 @@ type FileManager struct {
 }
 
 type ResultProcessor func(matchId, scriptA, scriptB, scoreA, scoreB, ticks int)
+type CellProcessor func(x, y, moves, shots, kills, waits int)
 
 var scriptIdRegexp = regexp.MustCompile(`/(\d+).l$`)
 var generationRegexp = regexp.MustCompile(`/gen_(\d+)$`)
@@ -157,6 +158,29 @@ func (fm *FileManager) writeCellStatistics(match *Match) {
 	}
 
 	logger.Printf("Wrote %d bytes to cell statistics file.", written)
+}
+
+func (fm *FileManager) EachCell(callback CellProcessor) {
+	path := fmt.Sprintf("scenario/%s/gen_%d/cells", fm.Scenario, fm.Generation)
+	var cell [6]uint64
+
+	file, err := os.Open(path)
+	if err != nil {
+		logger.Fatalf("Couldn't open %s for reading: %v", path, err)
+	}
+	reader := bufio.NewReader(file)
+
+	for {
+		for i := 0; i < 6; i++ {
+			cell[i], err = binary.ReadUvarint(reader)
+			if err == io.EOF {
+				return
+			} else if err != nil {
+				logger.Fatalf("Error while reading cells from %s: %v", path, err)
+			}
+		}
+		callback(int(cell[0]), int(cell[1]), int(cell[2]), int(cell[3]), int(cell[4]), int(cell[5]))
+	}
 }
 
 func (fm *FileManager) writeMatchOutcome(match *Match) {

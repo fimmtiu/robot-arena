@@ -9,10 +9,11 @@ import (
 type ResultsViewer struct {
 	Scenario string
 	Output io.Writer
+	GenerationCount int
 }
 
 func NewResultsViewer(scenario string) *ResultsViewer {
-	return &ResultsViewer{scenario, nil}
+	return &ResultsViewer{scenario, nil, CurrentHighestGeneration(scenario)}
 }
 
 func (rv *ResultsViewer) GenerateResults() {
@@ -27,6 +28,11 @@ func (rv *ResultsViewer) GenerateResults() {
 
 	rv.WriteHeader()
 	rv.WriteSummary()
+	for genId := 1; genId <= rv.GenerationCount; genId++ {
+		gen := NewGeneration(rv.Scenario, genId)
+		rv.GenerateHeatmaps(gen)
+		// rv.WriteHeatmaps(gen)
+	}
 	rv.WriteFooter()
 	logger.Printf("Results are at %s", path)
 }
@@ -55,8 +61,7 @@ func (rv *ResultsViewer) WriteSummary() {
 	</tr>
 `)
 
-	max := CurrentHighestGeneration(rv.Scenario)
-	for genId := 1; genId <= max; genId++ {
+	for genId := 1; genId <= rv.GenerationCount; genId++ {
 		gen := NewGeneration(rv.Scenario, genId)
 		successes := 0
 		gen.FileManager.EachResultRow(func (_, _, _, scoreA, scoreB, _ int) {
@@ -74,6 +79,10 @@ func (rv *ResultsViewer) WriteSummary() {
 `, genId, successes, gen.FileManager.AverageScriptSize()))
 	}
 	io.WriteString(rv.Output, "\n</table>\n")
+}
+
+func (rv *ResultsViewer) GenerateHeatmaps(gen *Generation) {
+	// FIXME: huge mess, not ready yet
 }
 
 func (rv *ResultsViewer) WriteFooter() {
