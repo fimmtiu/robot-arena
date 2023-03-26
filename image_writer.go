@@ -111,7 +111,7 @@ func (writer *ImageWriter) DrawGameState(state *GameState, action *Action) {
 }
 
 func (writer *ImageWriter) FinishImage() {
-	path := writer.CurrentImage.Name
+	path := writer.CurrentImage.Filename
 	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		logger.Fatalf("Can't open file %s: %v", path, err)

@@ -22,7 +22,7 @@ const (
 
 // Source data for a PNG image of the current state of the arena.
 type ArenaImage struct {
-	Name string
+	Filename string
 	Width int
 	Height int
 	PixelsPerCell int
@@ -47,11 +47,11 @@ func (img *ArenaImage) DrawCell(x, y int, cellColor color.RGBA) {
 // Draws an arbitrary rectangle of swatch size or smaller on the image.
 func (img *ArenaImage) DrawRect(rect image.Rectangle, cellColor color.RGBA) {
 	swatch := img.GetColorSwatch(cellColor)
-	if cellColor.A == 255 {
+	// if cellColor.A == 255 {
 		draw.Draw(img.Image, rect, swatch, swatch.Bounds().Min, draw.Src)
-	} else {
-		draw.Draw(img.Image, rect, swatch, swatch.Bounds().Min, draw.Over)
-	}
+	// } else {
+	// 	draw.Draw(img.Image, rect, swatch, swatch.Bounds().Min, draw.Over)
+	// }
 }
 
 // We generate and cache solid color swatches so that we can copy them over in big rectangles instead of laboriously

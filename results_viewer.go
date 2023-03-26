@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 )
 
 type ResultsViewer struct {
@@ -115,10 +116,43 @@ func (rv *ResultsViewer) WriteBestScores(gen *Generation) {
 func (rv *ResultsViewer) WriteHeatmaps(heatmaps []*Heatmap) {
 	io.WriteString(rv.Output, `
 		<table>
+		  <tr>
+			  <th>Moves</th>
+				<th>Waits</th>
+			</tr>
+			<tr>
 	`)
+
+	rv.WriteHeatmap(heatmaps[MovesMap])
+	rv.WriteHeatmap(heatmaps[WaitsMap])
+
 	io.WriteString(rv.Output, `
-		</table>
+	    </tr>
+		  <tr>
 	`)
+
+	rv.WriteHeatmap(heatmaps[ShotsMap])
+	rv.WriteHeatmap(heatmaps[KillsMap])
+
+	io.WriteString(rv.Output, `
+			</tr>
+  	</table>
+	`)
+}
+
+func (rv *ResultsViewer) WriteHeatmap(heatmap *Heatmap) {
+	relative_path := fmt.Sprintf("gen_%d/%s.png", heatmap.Generation.Id, heatmap.Writer.Prefix)
+	destination := fmt.Sprintf("scenario/%s/%s", rv.Scenario, relative_path)
+	logger.Printf("Copying heatmap from '%s' to '%s'", heatmap.Filename, destination)
+	cmd := exec.Command("cp", heatmap.Filename, destination)
+	err := cmd.Run()
+	if err != nil {
+		logger.Fatalf("Failed to run 'cp': %v", err)
+	}
+
+	io.WriteString(rv.Output, fmt.Sprintf(`
+		<td><img src="%s"></td>
+	`, relative_path))
 }
 
 func (rv *ResultsViewer) WriteFooter() {
