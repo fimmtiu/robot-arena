@@ -4,9 +4,8 @@ import "image/color"
 
 type Heatmap struct {
 	Writer ImageWriter
-	Cells map[int]int
+	Cells map[int]int // FIXME not used any more, remove this
 	Color color.RGBA
-	Gen *Generation // FIXME not used any more, remove this
 }
 
 const (
@@ -20,23 +19,26 @@ const (
 const HEATMAP_PIXELS_PER_CELL = 8
 const TRANSPARENCY = 255 / 10
 
-func NewHeatmap(name string, colour color.RGBA, gen *Generation) *Heatmap {
-	return &Heatmap{
-		NewImageWriter(name, HEATMAP_PIXELS_PER_CELL),
-		make(map[int]int), colour, gen,
-	}
+func NewHeatmap(name string, arena *Arena, colour color.RGBA) *Heatmap {
+	writer := NewImageWriter(name, HEATMAP_PIXELS_PER_CELL)
+	writer.StartImage(arena)
+	return &Heatmap{writer,	make(map[int]int), colour}
 }
 
 func (hm *Heatmap) AddEvent(x, y int) {
 	hm.Writer.CurrentImage.DrawCell(x, y, hm.Color)
 }
 
+func (hm *Heatmap) Write() {
+	hm.Writer.FinishImage()
+}
+
 func GenerateHeatmaps(gen *Generation) []*Heatmap {
 	var results [NumberOfHeatmapTypes]*Heatmap
-	results[MovesMap] = NewHeatmap("moves", color.RGBA{0, 213, 255, TRANSPARENCY}, gen) // teal
-	results[ShotsMap] = NewHeatmap("shots", color.RGBA{255, 136, 0, TRANSPARENCY}, gen) // orange
-	results[KillsMap] = NewHeatmap("kills", color.RGBA{255, 0, 0, TRANSPARENCY}, gen)   // red
-	results[WaitsMap] = NewHeatmap("waits", color.RGBA{0, 255, 0, TRANSPARENCY}, gen)   // green
+	results[MovesMap] = NewHeatmap("moves", gen.Arena, color.RGBA{0, 213, 255, TRANSPARENCY}) // teal
+	results[ShotsMap] = NewHeatmap("shots", gen.Arena, color.RGBA{255, 136, 0, TRANSPARENCY}) // orange
+	results[KillsMap] = NewHeatmap("kills", gen.Arena, color.RGBA{255, 0, 0, TRANSPARENCY})   // red
+	results[WaitsMap] = NewHeatmap("waits", gen.Arena, color.RGBA{0, 255, 0, TRANSPARENCY})   // green
 
 	gen.FileManager.EachCell(func (x, y, moves, shots, kills, waits int) {
 		for i := 0; i < moves; i++ {
@@ -53,5 +55,8 @@ func GenerateHeatmaps(gen *Generation) []*Heatmap {
 		}
 	})
 
+	for _, hm := range results {
+		hm.Write()
+	}
 	return results[:]
 }

@@ -25,23 +25,22 @@ const RANDOM_PERCENT = 0.35
 const MUTATE_PERCENT = 0.30
 const SPLICE_PERCENT = 0.35
 
-func NewHighestGeneration(scenario string) *Generation {
+func NewHighestGeneration(scenario string, arena *Arena) *Generation {
 	highestGeneration := CurrentHighestGeneration(scenario)
-	return NewGeneration(scenario, highestGeneration + 1)
+	return NewGeneration(scenario, highestGeneration + 1, arena)
 }
 
-func NewGeneration(scenario string, id int) *Generation {
+func NewGeneration(scenario string, id int, arena *Arena) *Generation {
 	var previous *Generation = nil
 	if id > 1 {
-		previous = &Generation{id - 1, nil, NewFileManager(scenario, id - 1), NewScriptEditor(), nil, nil, [][2]int{}}
+		previous = &Generation{id - 1, nil, NewFileManager(scenario, id - 1), NewScriptEditor(), arena, nil, [][2]int{}}
 	}
 
 	fileManager := NewFileManager(scenario, id)
-	return &Generation{id, previous, fileManager, NewScriptEditor(), nil, nil, [][2]int{}}
+	return &Generation{id, previous, fileManager, NewScriptEditor(), arena, nil, [][2]int{}}
 }
 
-func (g *Generation) Initialize(arena *Arena, vis Visualizer) {
-	g.Arena = arena
+func (g *Generation) Initialize(vis Visualizer) {
 	g.Visualizer = vis
 
 	// Ensure that we have a minimum number of scripts in the scripts folder.
@@ -53,7 +52,7 @@ func (g *Generation) Initialize(arena *Arena, vis Visualizer) {
 					g.MakeNewRandomScript()
 				}
 		} else {
-			best := g.Previous.BestScores()
+			best := g.Previous.BestScoreIds()
 			var count int
 
 			logger.Printf("Gen %d: Copying the %d best scripts from generation %d", g.Id, len(best), g.Previous.Id)
@@ -143,7 +142,7 @@ type ScriptScore struct {
 }
 
 // Returns the IDs of the top-scoring KEEP_PERCENT scripts.
-func (g *Generation) BestScores() []int {
+func (g *Generation) BestScores() []ScriptScore {
 	scores := make([]ScriptScore, len(g.FileManager.ScriptIds))
 
 	g.FileManager.EachResultRow(func (matchId, scriptA, scriptB, scoreA, scoreB, ticks int) {
@@ -163,8 +162,14 @@ func (g *Generation) BestScores() []int {
 	})
 
 	elements_to_keep := int(float64(len(scores)) * KEEP_PERCENT)
-	ids := make([]int, elements_to_keep)
-	for i := 0; i < elements_to_keep; i++ { // FIXME: this can just be a copy() now
+	return scores[0:elements_to_keep]
+}
+
+func (g *Generation) BestScoreIds() []int {
+	scores := g.BestScores()
+	ids := make([]int, len(scores))
+
+	for i := 0; i < len(scores); i++ {
 		ids[i] = scores[i].Id
 	}
 	return ids

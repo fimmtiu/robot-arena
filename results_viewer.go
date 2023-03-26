@@ -8,12 +8,15 @@ import (
 
 type ResultsViewer struct {
 	Scenario string
+	Arena *Arena
 	Output io.Writer
 	GenerationCount int
 }
 
-func NewResultsViewer(scenario string) *ResultsViewer {
-	return &ResultsViewer{scenario, nil, CurrentHighestGeneration(scenario)}
+const SCORES_PER_GENERATION = 10
+
+func NewResultsViewer(scenario string, arena *Arena) *ResultsViewer {
+	return &ResultsViewer{scenario, arena, nil, CurrentHighestGeneration(scenario)}
 }
 
 func (rv *ResultsViewer) GenerateResults() {
@@ -29,9 +32,11 @@ func (rv *ResultsViewer) GenerateResults() {
 	rv.WriteHeader()
 	rv.WriteSummary()
 	for genId := 1; genId <= rv.GenerationCount; genId++ {
-		gen := NewGeneration(rv.Scenario, genId)
-		rv.GenerateHeatmaps(gen)
-		// rv.WriteHeatmaps(gen)
+		gen := NewGeneration(rv.Scenario, genId, rv.Arena)
+
+		rv.WriteBestScores(gen)
+		heatmaps := GenerateHeatmaps(gen)
+		rv.WriteHeatmaps(heatmaps)
 	}
 	rv.WriteFooter()
 	logger.Printf("Results are at %s", path)
@@ -39,30 +44,30 @@ func (rv *ResultsViewer) GenerateResults() {
 
 func (rv *ResultsViewer) WriteHeader() {
 	io.WriteString(rv.Output, fmt.Sprintf(`
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <title>Robot Arena Results: %s</title>
-</head>
+		<!DOCTYPE html>
+		<html lang="en">
+		<head>
+			<title>Robot Arena Results: %s</title>
+		</head>
 
-<body>
-  <h1>Robot Arena Results: %s</h1>
-`, rv.Scenario, rv.Scenario))
+		<body>
+			<h1>Robot Arena Results: %s</h1>
+	`, rv.Scenario, rv.Scenario))
 }
 
 func (rv *ResultsViewer) WriteSummary() {
 	io.WriteString(rv.Output, `
-  <h3>Summary</h3>
-	<table>
-	<tr>
-		<th>Generation</th>
-		<th>Successful runs</th>
-		<th>Average script size</th>
-	</tr>
-`)
+		<h3>Summary</h3>
+		<table>
+		<tr>
+			<th>Generation</th>
+			<th>Successful runs</th>
+			<th>Average script size</th>
+		</tr>
+	`)
 
 	for genId := 1; genId <= rv.GenerationCount; genId++ {
-		gen := NewGeneration(rv.Scenario, genId)
+		gen := NewGeneration(rv.Scenario, genId, rv.Arena)
 		successes := 0
 		gen.FileManager.EachResultRow(func (_, _, _, scoreA, scoreB, _ int) {
 			if scoreA > 0 || scoreB > 0 {
@@ -71,23 +76,54 @@ func (rv *ResultsViewer) WriteSummary() {
 		})
 
 		io.WriteString(rv.Output, fmt.Sprintf(`
-	<tr>
-		<td>%d</td>
-		<td>%d</td>
-		<td>%d</td>
-	</tr>
-`, genId, successes, gen.FileManager.AverageScriptSize()))
+			<tr>
+				<td>%d</td>
+				<td>%d</td>
+				<td>%d</td>
+			</tr>
+		`, genId, successes, gen.FileManager.AverageScriptSize()))
 	}
-	io.WriteString(rv.Output, "\n</table>\n")
+	io.WriteString(rv.Output, `
+		</table>
+	`)
 }
 
-func (rv *ResultsViewer) GenerateHeatmaps(gen *Generation) {
-	// FIXME: huge mess, not ready yet
+func (rv *ResultsViewer) WriteBestScores(gen *Generation) {
+	io.WriteString(rv.Output, `
+		<table>
+			<tr>
+				<th>Script ID</th>
+				<th>Score</th>
+			</tr>
+	`)
+
+	scores := gen.BestScores()
+	for i := 0; i < SCORES_PER_GENERATION; i++ {
+		io.WriteString(rv.Output, fmt.Sprintf(`
+			<tr>
+				<td><a href="gen_%d/scripts/%d.l">%d</td>
+				<td>%.3f</td>
+			</tr>
+		`, gen.Id, scores[i].Id, scores[i].Id, scores[i].Score))
+	}
+
+	io.WriteString(rv.Output, `
+		</table>
+	`)
+}
+
+func (rv *ResultsViewer) WriteHeatmaps(heatmaps []*Heatmap) {
+	io.WriteString(rv.Output, `
+		<table>
+	`)
+	io.WriteString(rv.Output, `
+		</table>
+	`)
 }
 
 func (rv *ResultsViewer) WriteFooter() {
 	io.WriteString(rv.Output, `
-</body>
-</html>
-`)
+		</body>
+		</html>
+	`)
 }

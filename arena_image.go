@@ -22,6 +22,7 @@ const (
 
 // Source data for a PNG image of the current state of the arena.
 type ArenaImage struct {
+	Name string
 	Width int
 	Height int
 	PixelsPerCell int
@@ -30,9 +31,9 @@ type ArenaImage struct {
 
 var colorSwatches = make(map[int]image.Image, NumberOfColors)
 
-func NewArenaImage(width, height, pixelsPerCell int) *ArenaImage {
+func NewArenaImage(name string, width, height, pixelsPerCell int) *ArenaImage {
 	return &ArenaImage{
-		width, height, pixelsPerCell,
+		name, width, height, pixelsPerCell,
 		image.NewRGBA(image.Rect(0, 0, width * pixelsPerCell, height * pixelsPerCell)),
 	}
 }

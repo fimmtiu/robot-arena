@@ -49,7 +49,7 @@ func (writer *ImageWriter) WriteImage(state *GameState, action *Action) {
 }
 
 func (writer *ImageWriter) StartImage(arena *Arena) {
-	writer.CurrentImage = NewArenaImage(arena.Width, arena.Height, writer.PixelsPerCell)
+	writer.CurrentImage = NewArenaImage(writer.NextFileName(), arena.Width, arena.Height, writer.PixelsPerCell)
 
 	// Draw the map
 	for x := 0; x < writer.CurrentImage.Width; x++ {
@@ -111,7 +111,7 @@ func (writer *ImageWriter) DrawGameState(state *GameState, action *Action) {
 }
 
 func (writer *ImageWriter) FinishImage() {
-	path := writer.NextFileName()
+	path := writer.CurrentImage.Name
 	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		logger.Fatalf("Can't open file %s: %v", path, err)
