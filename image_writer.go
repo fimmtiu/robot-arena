@@ -87,7 +87,7 @@ func (writer *ImageWriter) DrawGameState(state *GameState, action *Action) {
 		writer.CurrentImage.DrawCell(bot.Position.X, bot.Position.Y, c)
 	}
 
-	// Draw the semi-transparent lasers as half-width lines. (This is not terribly efficient. Lots of overdraw.)
+	// Draw the lasers as half-width lines. (This is not terribly efficient. Lots of overdraw.)
 	if action != nil && action.Type == ActionShoot {
 		shooterX := state.CurrentBot.Position.X * writer.PixelsPerCell + writer.PixelsPerCell / 2
 		shooterY := state.CurrentBot.Position.Y * writer.PixelsPerCell + writer.PixelsPerCell / 2
@@ -96,9 +96,9 @@ func (writer *ImageWriter) DrawGameState(state *GameState, action *Action) {
 
 		var laserColor color.RGBA
 		if state.CurrentBot.Team == TeamA {
-			laserColor = color.RGBA{255, 0, 0, 128} // red, 50% transparency
+			laserColor = color.RGBA{255, 100, 100, 255} // lighter red
 		} else {
-			laserColor = color.RGBA{0, 0, 255, 128} // blue, 50% transparency
+			laserColor = color.RGBA{100, 100, 255, 255} // lighter blue
 		}
 		quarterWidth := writer.PixelsPerCell / 4
 

@@ -143,7 +143,6 @@ func (rv *ResultsViewer) WriteHeatmaps(heatmaps []*Heatmap) {
 func (rv *ResultsViewer) WriteHeatmap(heatmap *Heatmap) {
 	relative_path := fmt.Sprintf("gen_%d/%s.png", heatmap.Generation.Id, heatmap.Writer.Prefix)
 	destination := fmt.Sprintf("scenario/%s/%s", rv.Scenario, relative_path)
-	logger.Printf("Copying heatmap from '%s' to '%s'", heatmap.Filename, destination)
 	cmd := exec.Command("cp", heatmap.Filename, destination)
 	err := cmd.Run()
 	if err != nil {

@@ -5,9 +5,8 @@ import "image/color"
 type Heatmap struct {
 	Writer ImageWriter
 	Filename string
-	Cells map[int]int // FIXME not used any more, remove this
-	Color color.RGBA
 	Generation *Generation
+	Color color.RGBA
 }
 
 const (
@@ -18,13 +17,13 @@ const (
 	NumberOfHeatmapTypes
 )
 
-const HEATMAP_PIXELS_PER_CELL = 8
-const TRANSPARENCY = 255 / 10
+const HEATMAP_PIXELS_PER_CELL = 8 // FIXME: shrink to 6 once it's working
+const TRANSPARENCY = 25 // out of 255; 90% transparent
 
 func NewHeatmap(name string, gen *Generation, colour color.RGBA) *Heatmap {
 	writer := NewImageWriter(name, HEATMAP_PIXELS_PER_CELL)
 	writer.StartImage(gen.Arena)
-	return &Heatmap{writer, writer.CurrentImage.Filename,	make(map[int]int), colour, gen}
+	return &Heatmap{writer, writer.CurrentImage.Filename,	gen, colour}
 }
 
 func (hm *Heatmap) AddEvent(x, y int) {
@@ -35,6 +34,7 @@ func (hm *Heatmap) Write() {
 	hm.Writer.FinishImage()
 }
 
+// TODO: Don't generate a heatmap if the destination file already exists.
 func GenerateHeatmaps(gen *Generation) []*Heatmap {
 	var results [NumberOfHeatmapTypes]*Heatmap
 	results[MovesMap] = NewHeatmap("moves", gen, color.RGBA{0, 213, 255, TRANSPARENCY}) // teal
@@ -46,15 +46,15 @@ func GenerateHeatmaps(gen *Generation) []*Heatmap {
 		for i := 0; i < moves; i++ {
 			results[MovesMap].AddEvent(x, y)
 		}
-		for i := 0; i < shots; i++ {
-			results[ShotsMap].AddEvent(x, y)
-		}
-		for i := 0; i < kills; i++ {
-			results[KillsMap].AddEvent(x, y)
-		}
-		for i := 0; i < waits; i++ {
-			results[WaitsMap].AddEvent(x, y)
-		}
+		// for i := 0; i < shots; i++ {          // FIXME: Uncomment once it's working
+		// 	results[ShotsMap].AddEvent(x, y)
+		// }
+		// for i := 0; i < kills; i++ {
+		// 	results[KillsMap].AddEvent(x, y)
+		// }
+		// for i := 0; i < waits; i++ {
+		// 	results[WaitsMap].AddEvent(x, y)
+		// }
 	})
 
 	for _, hm := range results {
