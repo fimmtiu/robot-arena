@@ -7,8 +7,8 @@ import (
 )
 
 func TestFormatScript1(t *testing.T) {
-	have := ParseScript("(wait)")
-	expect := "(wait)\n"
+	have := ParseScript("(ally-visible?)")
+	expect := "(ally-visible?)\n"
 	// fmt.Printf("have:\n%s\nexpect:\n%s\n", NewScriptEditor().FormatScript(have), expect)
 	assert.Equal(t, expect, NewScriptEditor().FormatScript(have))
 
