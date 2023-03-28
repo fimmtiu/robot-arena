@@ -31,13 +31,5 @@ func (img *ArenaImage) DrawCell(x, y int, cellColor color.RGBA) {
 // Draws an arbitrary rectangle of a solid color on the image, doing alpha blending if necessary.
 func (img *ArenaImage) DrawRect(rect image.Rectangle, cellColor color.RGBA) {
 	swatch := image.NewUniform(cellColor)
-	if cellColor.A != 255 {
-		foo := color.RGBA{0x00, 0xd5, 0xff, 0x19}
-		if cellColor != foo {
-			logger.Printf("DrawCell color: %02x.%02x.%02x.%02x", cellColor.R, cellColor.G, cellColor.B, cellColor.A)
-		}
-		draw.Draw(img.Image, rect, swatch, image.Point{0, 0}, draw.Over)
-	} else {
-		draw.Draw(img.Image, rect, swatch, image.Point{0, 0}, draw.Src)
-	}
+	draw.Draw(img.Image, rect, swatch, image.Point{0, 0}, draw.Src)
 }
