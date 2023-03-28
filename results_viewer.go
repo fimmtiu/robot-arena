@@ -129,6 +129,10 @@ func (rv *ResultsViewer) WriteHeatmaps(heatmaps []*Heatmap) {
 	io.WriteString(rv.Output, `
 	    </tr>
 		  <tr>
+			  <th>Shots</th>
+				<th>Kills</th>
+			</tr>
+		  <tr>
 	`)
 
 	rv.WriteHeatmap(heatmaps[ShotsMap])

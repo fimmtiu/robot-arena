@@ -28,7 +28,7 @@ func (img *ArenaImage) DrawCell(x, y int, cellColor color.RGBA) {
 	img.DrawRect(rect, cellColor)
 }
 
-// Draws an arbitrary rectangle of a solid color on the image, doing alpha blending if necessary.
+// Draws an arbitrary rectangle of a solid color on the image. Doesn't respect opacity.
 func (img *ArenaImage) DrawRect(rect image.Rectangle, cellColor color.RGBA) {
 	swatch := image.NewUniform(cellColor)
 	draw.Draw(img.Image, rect, swatch, image.Point{0, 0}, draw.Src)

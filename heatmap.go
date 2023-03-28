@@ -47,14 +47,23 @@ func (hm *Heatmap) Write() {
 				alpha = MIN_OPACITY
 			}
 			hm.Writer.CurrentImage.DrawCell(x, y, color.RGBA{
-				hm.Color.R * (1.0 - ((255 - alpha) / 255)),
-				hm.Color.G * (1.0 - ((255 - alpha) / 255)),
-				hm.Color.B * (1.0 - ((255 - alpha) / 255)),
+				lightenColor(hm.Color.R, alpha),
+				lightenColor(hm.Color.G, alpha),
+				lightenColor(hm.Color.B, alpha),
 				255,
 			})
 		}
 	}
 	hm.Writer.FinishImage()
+}
+
+// Washes out a color based on the alpha (opacity) value. We want to avoid doing proper transparency because it's
+// noticeably more time-consuming than just filling in a solid pixel, and we never need to write to the same pixel more
+// than once.
+func lightenColor(c, alpha uint8) uint8 {
+	distance := 255.0 - float32(c)
+	ratio := (float32(255 - alpha) / 255.0)
+	return uint8(float32(c) + distance * ratio)
 }
 
 // TODO: Don't generate a heatmap if the destination file already exists.
@@ -69,15 +78,15 @@ func GenerateHeatmaps(gen *Generation) []*Heatmap {
 		for i := 0; i < moves; i++ {
 			results[MovesMap].AddEvent(x, y)
 		}
-		// for i := 0; i < shots; i++ {          // FIXME: Uncomment once it's working
-		// 	results[ShotsMap].AddEvent(x, y)
-		// }
-		// for i := 0; i < kills; i++ {
-		// 	results[KillsMap].AddEvent(x, y)
-		// }
-		// for i := 0; i < waits; i++ {
-		// 	results[WaitsMap].AddEvent(x, y)
-		// }
+		for i := 0; i < shots; i++ {
+			results[ShotsMap].AddEvent(x, y)
+		}
+		for i := 0; i < kills; i++ {
+			results[KillsMap].AddEvent(x, y)
+		}
+		for i := 0; i < waits; i++ {
+			results[WaitsMap].AddEvent(x, y)
+		}
 	})
 
 	for _, hm := range results {
