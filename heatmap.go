@@ -46,10 +46,12 @@ func (hm *Heatmap) Write() {
 			if alpha < MIN_OPACITY {
 				alpha = MIN_OPACITY
 			}
-			if alpha > MIN_OPACITY {
-				logger.Printf("Drawing %02x.%02x.%02x.%02x", hm.Color.R, hm.Color.G, hm.Color.B, alpha)
-			}
-			hm.Writer.CurrentImage.DrawCell(x, y, color.RGBA{hm.Color.R, hm.Color.G, hm.Color.B, alpha})
+			hm.Writer.CurrentImage.DrawCell(x, y, color.RGBA{
+				hm.Color.R * (1.0 - ((255 - alpha) / 255)),
+				hm.Color.G * (1.0 - ((255 - alpha) / 255)),
+				hm.Color.B * (1.0 - ((255 - alpha) / 255)),
+				255,
+			})
 		}
 	}
 	hm.Writer.FinishImage()
