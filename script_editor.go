@@ -27,34 +27,26 @@ var multiLineFormatStrings = []string{
 	"%s(%s %s\n%s %s\n%s %s)",
 }
 
-type ScriptEditor struct {
-	// FIXME: Will this need any state, or should I change these methods to plain functions?
+func RandomScript(minExprs int) string {
+	return FormatScript(RandomTree(minExprs))
 }
 
-func NewScriptEditor() *ScriptEditor {
-	return &ScriptEditor{}
-}
-
-func (editor *ScriptEditor) RandomScript(minExprs int) string {
-	return editor.FormatScript(editor.RandomTree(minExprs))
-}
-
-func (editor *ScriptEditor) RandomTree(minExprs int) *ScriptNode {
-	script := editor.makeRandomNode()
+func RandomTree(minExprs int) *ScriptNode {
+	script := makeRandomNode()
 	for countExpressions(script) < minExprs {
-		script = editor.wrapNode(script)
+		script = wrapNode(script)
 	}
 	return script
 }
 
-func (editor *ScriptEditor) makeRandomNode() *ScriptNode {
+func makeRandomNode() *ScriptNode {
 	if rand.Float32() < INTEGER_PERCENT {
 		return &ScriptNode{Type: Int, N: randomInt()}
 	} else {
 		randFunction := AllFunctions[rand.Intn(len(AllFunctions))]
 		node := &ScriptNode{Type: Expr, Children: []*ScriptNode{{Type: FuncName, Func: randFunction}}}
 		for i := 0; i < randFunction.Arity; i++ {
-			node.Children = append(node.Children, editor.makeRandomNode())
+			node.Children = append(node.Children, makeRandomNode())
 		}
 		return node
 	}
@@ -80,7 +72,7 @@ func countExpressions(node *ScriptNode) int {
 }
 
 // Wraps a node in some other multi-argument expression.
-func (editor *ScriptEditor) wrapNode(node *ScriptNode) *ScriptNode {
+func wrapNode(node *ScriptNode) *ScriptNode {
 	for {
 		fn := AllFunctions[rand.Intn(len(AllFunctions))]
 		if fn.Arity > 0 {
@@ -90,7 +82,7 @@ func (editor *ScriptEditor) wrapNode(node *ScriptNode) *ScriptNode {
 				if i == insertAt {
 					expr.Children = append(expr.Children, node)
 				} else {
-					expr.Children = append(expr.Children, editor.makeRandomNode())
+					expr.Children = append(expr.Children, makeRandomNode())
 				}
 			}
 			return expr
@@ -98,28 +90,28 @@ func (editor *ScriptEditor) wrapNode(node *ScriptNode) *ScriptNode {
 	}
 }
 
-func (editor *ScriptEditor) MutateScript(script string) string {
+func MutateScript(script string) string {
 	tree := ParseScript(script)
-	replacement := editor.RandomTree(MUTATION_SIZE)
+	replacement := RandomTree(MUTATION_SIZE)
 	replaceRandomNode(tree, replacement, 0)
-	editor.randomlyPruneTree(tree)
-	return editor.FormatScript(tree)
+	randomlyPruneTree(tree)
+	return FormatScript(tree)
 }
 
-func (editor *ScriptEditor) SpliceScripts(scriptA, scriptB string) string {
+func SpliceScripts(scriptA, scriptB string) string {
 	treeA, treeB := ParseScript(scriptA), ParseScript(scriptB)
 	replacement := chooseRandomLocation(treeB).Node
 
 	replaceRandomNode(treeA, replacement, 0)
-	editor.randomlyPruneTree(treeA)
-	return editor.FormatScript(treeA)
+	randomlyPruneTree(treeA)
+	return FormatScript(treeA)
 }
 
 // Repeatedly picks a random large-ish branch in the tree and replaces it with something shorter until we get
 // below the limit.
-func (editor *ScriptEditor) randomlyPruneTree(tree *ScriptNode) {
+func randomlyPruneTree(tree *ScriptNode) {
 	for countExpressions(tree) > MAX_EXPRS_PER_SCRIPT {
-		replacement := editor.RandomTree(1)
+		replacement := RandomTree(1)
 		replaceRandomNode(tree, replacement, countExpressions(replacement))
 	}
 }
@@ -167,7 +159,7 @@ func replaceRandomNode(tree, replacement *ScriptNode, minSize int) {
 	randomLocation.Parent.Children[randomLocation.Index] = replacement
 }
 
-func (editor *ScriptEditor) recursiveFormat(node *ScriptNode, indentLevel int) string {
+func recursiveFormat(node *ScriptNode, indentLevel int) string {
 	switch node.Type {
 	case Expr:
 		subIndentLevel := indentLevel + len(node.Children[0].Func.Name) + 2
@@ -176,27 +168,27 @@ func (editor *ScriptEditor) recursiveFormat(node *ScriptNode, indentLevel int) s
 			return fmt.Sprintf("(%s)", node.Children[0].Func.Name)
 		case 1:
 			return fmt.Sprintf("(%s %s)",	node.Children[0].Func.Name,
-													editor.recursiveFormat(node.Children[1], subIndentLevel))
+													recursiveFormat(node.Children[1], subIndentLevel))
 		case 2:
 			return fmt.Sprintf("(%s %s\n%s%s)",	node.Children[0].Func.Name,
-													editor.recursiveFormat(node.Children[1], subIndentLevel),
+													recursiveFormat(node.Children[1], subIndentLevel),
 													strings.Repeat(" ", subIndentLevel),
-													editor.recursiveFormat(node.Children[2], subIndentLevel))
+													recursiveFormat(node.Children[2], subIndentLevel))
 		case 3: // 'if' statements traditionally have two-space indentation in Lisp.
 			if node.Children[0].Func.Name == "if" {
 				return fmt.Sprintf("(%s %s\n%s%s\n%s%s)",	node.Children[0].Func.Name,
-														editor.recursiveFormat(node.Children[1], subIndentLevel),
+														recursiveFormat(node.Children[1], subIndentLevel),
 														strings.Repeat(" ", indentLevel + 2),
-														editor.recursiveFormat(node.Children[2], indentLevel + 2),
+														recursiveFormat(node.Children[2], indentLevel + 2),
 														strings.Repeat(" ", indentLevel + 2),
-														editor.recursiveFormat(node.Children[3], indentLevel + 2))
+														recursiveFormat(node.Children[3], indentLevel + 2))
 			} else {
 				return fmt.Sprintf("(%s %s\n%s%s\n%s%s)",	node.Children[0].Func.Name,
-														editor.recursiveFormat(node.Children[1], subIndentLevel),
+														recursiveFormat(node.Children[1], subIndentLevel),
 														strings.Repeat(" ", subIndentLevel),
-														editor.recursiveFormat(node.Children[2], subIndentLevel),
+														recursiveFormat(node.Children[2], subIndentLevel),
 														strings.Repeat(" ", subIndentLevel),
-														editor.recursiveFormat(node.Children[3], subIndentLevel))
+														recursiveFormat(node.Children[3], subIndentLevel))
 			}
 		}
 	case FuncName:
@@ -207,6 +199,6 @@ func (editor *ScriptEditor) recursiveFormat(node *ScriptNode, indentLevel int) s
 	return "OMG WTF AUGH THIS IS THE WORST"
 }
 
-func (editor *ScriptEditor) FormatScript(node *ScriptNode) string {
-	return editor.recursiveFormat(node, 0) + "\n"
+func FormatScript(node *ScriptNode) string {
+	return recursiveFormat(node, 0) + "\n"
 }

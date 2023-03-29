@@ -11,7 +11,6 @@ type Generation struct {
 	Id int
 	Previous *Generation
 	FileManager *FileManager
-	scriptEditor *ScriptEditor
 	Arena *Arena
 	Visualizer Visualizer
 	matchups [][2]int   // A list of [scriptA, scriptB] pairs.
@@ -33,11 +32,11 @@ func NewHighestGeneration(scenario string, arena *Arena) *Generation {
 func NewGeneration(scenario string, id int, arena *Arena) *Generation {
 	var previous *Generation = nil
 	if id > 1 {
-		previous = &Generation{id - 1, nil, NewFileManager(scenario, id - 1), NewScriptEditor(), arena, nil, [][2]int{}}
+		previous = &Generation{id - 1, nil, NewFileManager(scenario, id - 1), arena, nil, [][2]int{}}
 	}
 
 	fileManager := NewFileManager(scenario, id)
-	return &Generation{id, previous, fileManager, NewScriptEditor(), arena, nil, [][2]int{}}
+	return &Generation{id, previous, fileManager, arena, nil, [][2]int{}}
 }
 
 func (g *Generation) Initialize(vis Visualizer) {
@@ -120,17 +119,17 @@ func (g *Generation) CopyScriptFromPreviousGen(scriptId int) {
 }
 
 func (g *Generation) MakeNewRandomScript() {
-	code := g.scriptEditor.RandomScript(MIN_EXPRS_PER_SCRIPT)
+	code := RandomScript(MIN_EXPRS_PER_SCRIPT)
 	g.FileManager.WriteNewScript(code)
 }
 
 func (g *Generation) MutateScript(scriptId int) {
-	code := g.scriptEditor.MutateScript(g.Previous.FileManager.ScriptCode(scriptId))
+	code := MutateScript(g.Previous.FileManager.ScriptCode(scriptId))
 	g.FileManager.WriteNewScript(code)
 }
 
 func (g *Generation) SpliceScripts(scriptA, scriptB int) {
-	code := g.scriptEditor.SpliceScripts(g.Previous.FileManager.ScriptCode(scriptA), g.Previous.FileManager.ScriptCode(scriptB))
+	code := SpliceScripts(g.Previous.FileManager.ScriptCode(scriptA), g.Previous.FileManager.ScriptCode(scriptB))
 	g.FileManager.WriteNewScript(code)
 }
 
