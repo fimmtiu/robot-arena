@@ -90,13 +90,14 @@ func (rv *ResultsViewer) WriteSummary() {
 }
 
 func (rv *ResultsViewer) WriteBestScores(gen *Generation) {
-	io.WriteString(rv.Output, `
+	io.WriteString(rv.Output, fmt.Sprintf(`
+		<h2>Generation %d</h2>
 		<table>
 			<tr>
 				<th>Script ID</th>
 				<th>Score</th>
 			</tr>
-	`)
+	`, gen.Id))
 
 	scores := gen.BestScores()
 	for i := 0; i < SCORES_PER_GENERATION; i++ {

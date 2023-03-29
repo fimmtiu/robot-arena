@@ -8,6 +8,7 @@ import (
 )
 
 const MIN_EXPRS_PER_SCRIPT = 20  // FIXME: Later, let's use the average size of scripts in the generation instead of a constant
+const MAX_EXPRS_PER_SCRIPT = 1000
 const MUTATIONS_PER_SCRIPT = 2   // should this be random?
 const MUTATION_SIZE = 10         // should this be random?
 const MAX_LINE_LEN = 40
@@ -27,7 +28,7 @@ var multiLineFormatStrings = []string{
 }
 
 type ScriptEditor struct {
-	// FIXME: Will this ever need any state, or should I change these methods to plain functions?
+	// FIXME: Will this need any state, or should I change these methods to plain functions?
 }
 
 func NewScriptEditor() *ScriptEditor {
@@ -100,7 +101,8 @@ func (editor *ScriptEditor) wrapNode(node *ScriptNode) *ScriptNode {
 func (editor *ScriptEditor) MutateScript(script string) string {
 	tree := ParseScript(script)
 	replacement := editor.RandomTree(MUTATION_SIZE)
-	replaceRandomNode(tree, replacement)
+	replaceRandomNode(tree, replacement, 0)
+	editor.randomlyPruneTree(tree)
 	return editor.FormatScript(tree)
 }
 
@@ -108,8 +110,18 @@ func (editor *ScriptEditor) SpliceScripts(scriptA, scriptB string) string {
 	treeA, treeB := ParseScript(scriptA), ParseScript(scriptB)
 	replacement := chooseRandomLocation(treeB).Node
 
-	replaceRandomNode(treeA, replacement)
+	replaceRandomNode(treeA, replacement, 0)
+	editor.randomlyPruneTree(treeA)
 	return editor.FormatScript(treeA)
+}
+
+// Repeatedly picks a random large-ish branch in the tree and replaces it with something shorter until we get
+// below the limit.
+func (editor *ScriptEditor) randomlyPruneTree(tree *ScriptNode) {
+	for countExpressions(tree) > MAX_EXPRS_PER_SCRIPT {
+		replacement := editor.RandomTree(1)
+		replaceRandomNode(tree, replacement, countExpressions(replacement))
+	}
 }
 
 type TreeLocation struct {
@@ -140,8 +152,18 @@ func chooseRandomLocation(tree *ScriptNode) TreeLocation {
 	}
 }
 
-func replaceRandomNode(tree, replacement *ScriptNode) {
-	randomLocation := chooseRandomLocation(tree)
+func replaceRandomNode(tree, replacement *ScriptNode, minSize int) {
+	var randomLocation TreeLocation
+	if minSize > 0 {
+		for {
+			randomLocation = chooseRandomLocation(tree)
+			if countExpressions(randomLocation.Node) >= minSize {
+				break
+			}
+		}
+	} else {
+		randomLocation = chooseRandomLocation(tree)
+	}
 	randomLocation.Parent.Children[randomLocation.Index] = replacement
 }
 

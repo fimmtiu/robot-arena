@@ -93,7 +93,7 @@ func (m *Match) RunTick() bool {
 	}
 
 	if m.State.IsGameOver() {
-		logger.Printf("Final score: Team A %d, Team B %d.", m.Scores[TeamA], m.Scores[TeamB])
+		// logger.Printf("Final score: Team A %d, Team B %d.", m.Scores[TeamA], m.Scores[TeamB])
 		m.Generation.Visualizer.Finish()
 		return true
 	}

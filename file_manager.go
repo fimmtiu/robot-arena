@@ -156,8 +156,6 @@ func (fm *FileManager) writeCellStatistics(match *Match) {
 	if written < len(buf) {
 		logger.Fatalf("Only wrote %d of %d bytes to %s!", written, len(buf), path)
 	}
-
-	logger.Printf("Wrote %d bytes to cell statistics file.", written)
 }
 
 func (fm *FileManager) EachCell(callback CellProcessor) {
@@ -203,8 +201,6 @@ func (fm *FileManager) writeMatchOutcome(match *Match) {
 	if written < len(row) {
 		logger.Fatalf("Only wrote %d of %d characters to %s!", written, len(row), path)
 	}
-
-	logger.Printf("Wrote %d characters to results CSV.", written)
 }
 
 func (fm *FileManager) EachResultRow(callback ResultProcessor) {
