@@ -247,6 +247,7 @@ func RS_Multiply(s *Script, args []*ScriptNode) Result {
 	return result1
 }
 
+// If we try to divide by zero, we just return zero instead of causing an error.
 func RS_Divide(s *Script, args []*ScriptNode) Result {
 	result1 := s.Eval(args[0])
 	if result1.Type != ResultInt {

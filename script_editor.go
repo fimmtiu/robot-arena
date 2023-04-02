@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-const MIN_EXPRS_PER_SCRIPT = 20  // FIXME: Later, let's use the average size of scripts in the generation instead of a constant
+const MIN_EXPRS_PER_SCRIPT = 20
 const MAX_EXPRS_PER_SCRIPT = 1000
 const MUTATIONS_PER_SCRIPT = 2   // should this be random?
 const MUTATION_SIZE = 10         // should this be random?
@@ -159,6 +159,21 @@ func replaceRandomNode(tree, replacement *ScriptNode, minSize int) {
 	randomLocation.Parent.Children[randomLocation.Index] = replacement
 }
 
+// When formatting, we want simple expressions (anything where the arguments are all constants or zero-argument
+// functions) to be printed on one line for readability's sake.
+func simpleExpr(node *ScriptNode) bool {
+	if node.Type != Expr {
+		return true
+	}
+
+	for _, child := range node.Children {
+		if child.Type == Expr && child.Children[0].Func.Arity > 0 {
+			return false
+		}
+	}
+	return true
+}
+
 func recursiveFormat(node *ScriptNode, indentLevel int) string {
 	switch node.Type {
 	case Expr:
@@ -170,10 +185,16 @@ func recursiveFormat(node *ScriptNode, indentLevel int) string {
 			return fmt.Sprintf("(%s %s)",	node.Children[0].Func.Name,
 													recursiveFormat(node.Children[1], subIndentLevel))
 		case 2:
-			return fmt.Sprintf("(%s %s\n%s%s)",	node.Children[0].Func.Name,
-													recursiveFormat(node.Children[1], subIndentLevel),
-													strings.Repeat(" ", subIndentLevel),
-													recursiveFormat(node.Children[2], subIndentLevel))
+			if simpleExpr(node) {
+				return fmt.Sprintf("(%s %s %s)",	node.Children[0].Func.Name,
+														recursiveFormat(node.Children[1], subIndentLevel),
+														recursiveFormat(node.Children[2], subIndentLevel))
+			} else {
+				return fmt.Sprintf("(%s %s\n%s%s)",	node.Children[0].Func.Name,
+														recursiveFormat(node.Children[1], subIndentLevel),
+														strings.Repeat(" ", subIndentLevel),
+														recursiveFormat(node.Children[2], subIndentLevel))
+			}
 		case 3: // 'if' statements traditionally have two-space indentation in Lisp.
 			if node.Children[0].Func.Name == "if" {
 				return fmt.Sprintf("(%s %s\n%s%s\n%s%s)",	node.Children[0].Func.Name,
@@ -183,12 +204,19 @@ func recursiveFormat(node *ScriptNode, indentLevel int) string {
 														strings.Repeat(" ", indentLevel + 2),
 														recursiveFormat(node.Children[3], indentLevel + 2))
 			} else {
-				return fmt.Sprintf("(%s %s\n%s%s\n%s%s)",	node.Children[0].Func.Name,
-														recursiveFormat(node.Children[1], subIndentLevel),
-														strings.Repeat(" ", subIndentLevel),
-														recursiveFormat(node.Children[2], subIndentLevel),
-														strings.Repeat(" ", subIndentLevel),
-														recursiveFormat(node.Children[3], subIndentLevel))
+				if simpleExpr(node) {
+					return fmt.Sprintf("(%s %s\n%s%s\n%s%s)",	node.Children[0].Func.Name,
+															recursiveFormat(node.Children[1], subIndentLevel),
+															strings.Repeat(" ", subIndentLevel),
+															recursiveFormat(node.Children[2], subIndentLevel),
+															strings.Repeat(" ", subIndentLevel),
+															recursiveFormat(node.Children[3], subIndentLevel))
+				} else {
+					return fmt.Sprintf("(%s %s %s %s)",	node.Children[0].Func.Name,
+															recursiveFormat(node.Children[1], subIndentLevel),
+															recursiveFormat(node.Children[2], subIndentLevel),
+															recursiveFormat(node.Children[3], subIndentLevel))
+				}
 			}
 		}
 	case FuncName:
@@ -201,4 +229,127 @@ func recursiveFormat(node *ScriptNode, indentLevel int) string {
 
 func FormatScript(node *ScriptNode) string {
 	return recursiveFormat(node, 0) + "\n"
+}
+
+// The evolution process creates really weird-looking programs with lots of dead code, so let's build a tool
+// to make simplified versions of the scripts so that humans can see how they work.
+
+func SimplifyTree(tree *ScriptNode) {
+	if tree.Type == Expr {
+		switch tree.Children[0].Func.Name {
+		case "if":
+			// If the 'if' condition is constant, replace the 'if' statement with the corresponding branch.
+			isConstant, value := constantValue(tree.Children[1])
+			logger.Printf("A: Is %s constant? => %v", FormatScript(tree.Children[1]), isConstant)
+			if isConstant {
+				branch := tree.Children[2]
+				if value == 0 {
+					branch = tree.Children[3]
+				}
+				replaceNode(tree, branch)
+			}
+		}
+	}
+
+	// Fold constant values
+	isConstant, value := constantValue(tree)
+	logger.Printf("B: Is %s constant? => %v", FormatScript(tree), isConstant)
+	if isConstant {
+		replaceNode(tree, &ScriptNode{Type: Int, N: value})
+	}
+}
+
+func replaceNode(dest, src *ScriptNode) {
+	dest.Children = src.Children
+	dest.Type = src.Type
+	dest.Func = src.Func
+	dest.N = src.N
+}
+
+func constantValue(node *ScriptNode) (bool, int) {
+	if node.Type == Int {
+		return true, node.N
+	} else if node.Type == Expr {
+		switch (node.Children[0].Func.Name) {
+		case "and":
+			if isConstant, values := constantArguments(node); isConstant {
+				if values[0] == 0 {
+					return true, 0
+				}
+				return true, values[1]
+			}
+		case "or":
+			// 'or' is tricky because not all of the arguments have to be constant; we just need one true constant to return.
+			for i := 1; i < len(node.Children); i++ {
+				isConstant, value := constantValue(node.Children[i])
+				if !isConstant {
+					return false, -1
+				}
+				if value != 0 || i == len(node.Children) - 1 {
+					return true, value
+				}
+			}
+				case "+":
+			if isConstant, values := constantArguments(node); isConstant {
+				return true, values[0] + values[1]
+			}
+		case "-":
+			if isConstant, values := constantArguments(node); isConstant {
+				return true, values[0] - values[1]
+			}
+		case "*":
+			if isConstant, values := constantArguments(node); isConstant {
+				return true, values[0] * values[1]
+			}
+		case "/":
+			if isConstant, values := constantArguments(node); isConstant {
+				if values[1] == 0 {
+					return true, 0
+				}
+				return true, values[0] / values[1]
+			}
+		case "mod":
+			if isConstant, values := constantArguments(node); isConstant {
+				if values[1] == 0 {
+					return true, 0
+				}
+				return true, values[0] % values[1]
+			}
+		case "<":
+			if isConstant, values := constantArguments(node); isConstant {
+				if values[0] < values[1] {
+					return true, 1
+				}
+				return true, 0
+			}
+		case ">":
+			if isConstant, values := constantArguments(node); isConstant {
+				if values[0] > values[1] {
+					return true, 1
+				}
+				return true, 0
+			}
+		case "=":
+			if isConstant, values := constantArguments(node); isConstant {
+				if values[0] == values[1] {
+					return true, 1
+				}
+				return true, 0
+			}
+		}
+	}
+
+	return false, -1
+}
+
+func constantArguments(node *ScriptNode) (bool, []int) {
+	values := make([]int, len(node.Children) - 1)
+	for i := 1; i < len(node.Children); i++ {
+		isConstant, value := constantValue(node.Children[i])
+		if !isConstant {
+			return false, nil
+		}
+		values[i - 1] = value
+	}
+	return true, values
 }

@@ -18,7 +18,7 @@ const (
 	NumberOfHeatmapTypes
 )
 
-const HEATMAP_PIXELS_PER_CELL = 8 // FIXME: shrink to 6 once it's working
+const HEATMAP_PIXELS_PER_CELL = 6
 const MIN_OPACITY = 38 // out of 255; about 15%
 
 func NewHeatmap(name string, gen *Generation, colour color.RGBA) *Heatmap {
