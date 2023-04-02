@@ -240,7 +240,6 @@ func SimplifyTree(tree *ScriptNode) {
 		case "if":
 			// If the 'if' condition is constant, replace the 'if' statement with the corresponding branch.
 			isConstant, value := constantValue(tree.Children[1])
-			logger.Printf("A: Is %s constant? => %v", FormatScript(tree.Children[1]), isConstant)
 			if isConstant {
 				branch := tree.Children[2]
 				if value == 0 {
@@ -253,9 +252,15 @@ func SimplifyTree(tree *ScriptNode) {
 
 	// Fold constant values
 	isConstant, value := constantValue(tree)
-	logger.Printf("B: Is %s constant? => %v", FormatScript(tree), isConstant)
 	if isConstant {
 		replaceNode(tree, &ScriptNode{Type: Int, N: value})
+	}
+
+	for i := 1; i < len(tree.Children); i++ {
+		isConstant, value := constantValue(tree.Children[i])
+		if isConstant {
+			replaceNode(tree.Children[i], &ScriptNode{Type: Int, N: value})
+		}
 	}
 }
 
@@ -332,6 +337,13 @@ func constantValue(node *ScriptNode) (bool, int) {
 		case "=":
 			if isConstant, values := constantArguments(node); isConstant {
 				if values[0] == values[1] {
+					return true, 1
+				}
+				return true, 0
+			}
+		case "not":
+			if isConstant, values := constantArguments(node); isConstant {
+				if values[0] == 0 {
 					return true, 1
 				}
 				return true, 0

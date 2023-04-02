@@ -63,10 +63,16 @@ func TestSimplifyScript(t *testing.T) {
 		"(or 0 (/ 2 0))": "0\n",
 		"(< (+ 2 2) (+ 3 3))": "1\n",
 		"(< (+ 3 3) (+ 2 2))": "0\n",
+		"(> (+ 2 2) (+ 3 3))": "0\n",
+		"(> (+ 3 3) (+ 2 2))": "1\n",
+		"(= (+ 2 2) (+ 2 2))": "1\n",
+		"(= (+ 3 3) (+ 2 2))": "0\n",
+		"(not (+ 2 2))": "0\n",
+		"(not (- 2 2))": "1\n",
 
 		// Expressions that are not constant should not be simplified.
-		"(if (my-x-pos) (+ 2 2) (- 3 3))": "(if (my-x-pos)\n  (+ 2 2)\n  (- 3 3))\n",
-		"(and (+ 2 (my-x-pos)) (+ 3 3))": "(and (+ 2 (my-x-pos))\n     (+ 3 3))\n",
+		"(if (my-x-pos) (+ 2 2) (- 3 3))": "(if (my-x-pos)\n  4\n  0)\n",
+		"(and (+ 2 (my-x-pos)) (+ 3 3))": "(and (+ 2 (my-x-pos))\n     6)\n",
 		"(or (my-x-pos) (my-x-pos))": "(or (my-x-pos) (my-x-pos))\n",
 	}
 
