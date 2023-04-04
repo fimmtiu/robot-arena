@@ -220,7 +220,6 @@ func (fm *FileManager) EachResultRow(callback ResultProcessor) {
 	path := fmt.Sprintf("scenario/%s/gen_%d/results.csv", fm.Scenario, fm.Generation)
 	file, err := os.OpenFile(path, os.O_RDONLY, 0644)
 	if err != nil {
-		panic("o noes")
 		logger.Fatalf("Can't open %s: %v", path, err)
 	}
 	reader := bufio.NewReader(file)

@@ -47,6 +47,7 @@ type Match struct {
 	ScriptA int
 	ScriptB int
 	Scores [2]int
+	Moved [2]bool
 }
 
 var currentMatch *Match
@@ -56,7 +57,7 @@ func NewMatch(generation *Generation, id int, scriptId_A int, scriptId_B int) *M
 	generation.Arena.Reset()
 	rng := rand.New(rand.NewSource(int64(id)))
 	state := NewGameState(generation.Arena)
-	match := &Match{rng, state, generation, id,  scriptId_A, scriptId_B, [2]int{0, 0}}
+	match := &Match{rng, state, generation, id,  scriptId_A, scriptId_B, [2]int{0, 0}, [2]bool{false, false}}
 
 	scripts := [2]Script{generation.FileManager.LoadScript(state, scriptId_A), generation.FileManager.LoadScript(state, scriptId_B)}
 	for i, bot := range state.Bots {
@@ -93,6 +94,12 @@ func (m *Match) RunTick() bool {
 	}
 
 	if m.State.IsGameOver() {
+		// If no bot on a team has moved during the match, penalize them 5 points.
+		for i := 0; i < 2; i++ {
+			if !m.Moved[i] {
+				m.Scores[i] -= 5
+			}
+		}
 		m.Generation.Visualizer.Finish()
 		return true
 	}
@@ -119,6 +126,7 @@ func (m *Match) BotMove(bot *Bot, destination *Cell) {
 	if m.State.CellIsEmpty(destination) {
 		bot.Position = destination
 		destination.Moves++
+		m.Moved[bot.Team] = true
 	}
 }
 

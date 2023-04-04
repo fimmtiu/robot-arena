@@ -34,6 +34,7 @@ is as follows:
 * Game ends because it ran over time: -5 points to each team. This ensures that a stalemate game can never result in a positive score for either team.
 * Game ends because the enemy's goal is destroyed: +10 points to the winners
 * Game ends because you blew up your own goal: -20 points to the losers
+* No robot on the team moved during the match: -5 points. This should hopefully discourage boring "turret" behaviour.
 
 The score is the fitness criterion for the gene splicer; scripts which consistently score higher than others will be
 promoted to future generations.
