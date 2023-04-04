@@ -125,8 +125,9 @@ To do: integer negation? absolute value?
 
 A "scenario" is a single sequence of generations, starting from complete randomness and hopefully ending in something interesting.
 
-* `run <scenario> <number of generations>`: Runs the simulation for N generations.
-* `view <scenario> <generation> <match>`: Runs the given match and outputs the result to GIF and MP4.
+* `run <scenario> <number of generations>`: Runs the simulation for N generations, then generates a results summary.
+* `view <scenario> <generation> <match>`: Runs the given match and outputs an animation to MP4 (default) or GIF.
+* `results <scenario>`: Regenerates the `results.html` page for the given scenario.
 
 ### Arena map
 
@@ -139,7 +140,9 @@ The pixels in the arena map at `arena.png` have the following meanings:
 * `#00ff00`: Green, goal for Team A
 * `#01ff00`: Green, goal for Team B
 
-If you want to edit the map, be sure that it remains symmetrical! Otherwise you'll get inconsistent results.
+If you want to edit the map, be sure that it remains symmetrical! Otherwise you'll get inconsistent results. Also, it's
+useful to stagger the robot spawn points so that none of them are directly in line with each other or their goal. This
+cuts down on friendly fire incidents where they shoot each other on the first turn.
 
 ## Output
 
@@ -153,8 +156,8 @@ After a match, we record per-cell statistics in a binary file called ``scenario/
 * The number of times a robot was killed on the cell
 * The number of times a robot waited on the cell
 
-I plan to create a tool later which will sum the results for all matches in a generation and visualize them as heatmaps
-superimposed over the arena, so one can see at a glance how successful a given generation has been.
+After the simulation runs, it will generate a page of human-readable data at `scenario/<name>/results.html` which shows
+heatmaps of all of these statistics superimposed on the arena.
 
 ### Generation results
 
@@ -175,25 +178,3 @@ We'll use these results to decide which scripts get spliced and mutated for the 
 ### Lineage tracking
 
 TO DO: Later we'll want a log that keeps track of how each script has evolved and advanced over generations.
-
-## Generation logic (FIXME)
-
-If the current generation doesn't have a scripts dir:
-  If this is the first generation:
-    Generate N random scripts.
-  Else:
-    Find the best scripts from the previous generation.
-      - Read all rows, sum scores for each script
-      - Sort by score, take the top 20%.
-    Create N new scripts: some random, some unmodified, some mutated, some spliced.
-
-Read this generation's results.csv:
-  - total number of rows
-  - for each script, the number of rows where it's appeared and the IDs of the scripts it's battled
-Loop forever:
-  For each script that's done less than N tests:
-    Pick a script that's also done less than N tests, which isn't this script and which hasn't challenged this script before
-      - If no such script exists, we're done with the generation. Break loop.
-    Run a test with the two scripts
-    Update in-memory results structure
-    Write the results to results.csv and the cells log
