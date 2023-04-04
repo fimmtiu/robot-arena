@@ -122,6 +122,14 @@ func TestArityErrors(t *testing.T) {
 	assert.ErrorContains(t, err, "Wrong number of arguments to '+': got 1, expected 2")
 }
 
+func TestScriptNodeSize(t *testing.T) {
+	foo := ParseScript("(if 1 2 3)")
+	bar := ParseScript("(if (and 1 2) 3 4)")
+
+	assert.Equal(t, 4, foo.Size())
+	assert.Equal(t, 6, bar.Size())
+}
+
 func TestAddNumbers(t *testing.T) {
 	code := "(+ 13 2)"
 	node, _, err := readToken(code)

@@ -19,7 +19,7 @@ const (
 )
 
 const HEATMAP_PIXELS_PER_CELL = 6
-const MIN_OPACITY = 38 // out of 255; about 15%
+const MIN_OPACITY = 30  // out of 255; about 12%
 
 func NewHeatmap(name string, gen *Generation, colour color.RGBA) *Heatmap {
 	writer := NewImageWriter(name, HEATMAP_PIXELS_PER_CELL)

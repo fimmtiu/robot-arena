@@ -29,7 +29,7 @@ var generationRegexp = regexp.MustCompile(`/gen_(\d+)$`)
 func NewFileManager(scenario string, generation int) *FileManager {
 	fm := &FileManager{scenario, generation, make([]int, 0, SCRIPTS_PER_GENERATION)}
 
-	if err := os.MkdirAll(fm.ScriptsDir(), 0755); err != nil {
+	if err := os.MkdirAll(fm.SimpleScriptsDir(), 0755); err != nil {
 		logger.Fatalf("Failed to create directory %s: %v", fm.ScriptsDir(), err)
 	}
 
@@ -38,7 +38,7 @@ func NewFileManager(scenario string, generation int) *FileManager {
 }
 
 func (fm *FileManager) ReadScriptIds() {
-	pattern := fm.ScriptsDir() + "/*"
+	pattern := fm.ScriptsDir() + "/*.l"
 	filenames, err := filepath.Glob(pattern)
 	if err != nil {
 		logger.Fatalf("Can't glob %s: %v", pattern, err)
@@ -69,27 +69,40 @@ func (fm *FileManager) ScriptsDir() string {
 	return fmt.Sprintf("scenario/%s/gen_%d/scripts", fm.Scenario, fm.Generation)
 }
 
-func (fm *FileManager) WriteNewScript(code string) {
-	file := fm.NewScriptFile()
-	file.WriteString(code)
-	file.Close()
+func (fm *FileManager) SimpleScriptsDir() string {
+	return fmt.Sprintf("scenario/%s/gen_%d/scripts/simple", fm.Scenario, fm.Generation)
 }
 
-func (fm *FileManager) NewScriptFile() *os.File {
+func (fm *FileManager) WriteNewScript(code string) {
 	highestId := 1
 	if len(fm.ScriptIds) > 0 {
 		highestId = fm.ScriptIds[len(fm.ScriptIds)-1]
 		highestId++
 	}
+	fm.ScriptIds = append(fm.ScriptIds, highestId)
 
 	path := fmt.Sprintf("%s/%d.l", fm.ScriptsDir(), highestId)
+	fm.WriteFile(path, code)
+
+	tree := ParseScript(code)
+	tree2 := ParseScript(code)
+	ts := tree.Size()
+	t2s := tree2.Size()
+	SimplifyTree(tree)
+	if ts < t2s {
+		logger.Printf("Shrunk script %d (%d - %d = %d)", highestId, t2s, ts, t2s - ts)
+	}
+	path = fmt.Sprintf("%s/%d.l", fm.SimpleScriptsDir(), highestId)
+	fm.WriteFile(path, FormatScript(tree))
+}
+
+func (fm *FileManager) WriteFile(path string, contents string) {
 	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0644)
 	if err != nil {
 		logger.Fatalf("Can't open new script file %v: %v", path, err)
 	}
-
-	fm.ScriptIds = append(fm.ScriptIds, highestId)
-	return f
+	f.WriteString(contents)
+	f.Close()
 }
 
 func (fm *FileManager) ScriptCode(id int) string {
@@ -207,6 +220,7 @@ func (fm *FileManager) EachResultRow(callback ResultProcessor) {
 	path := fmt.Sprintf("scenario/%s/gen_%d/results.csv", fm.Scenario, fm.Generation)
 	file, err := os.OpenFile(path, os.O_RDONLY, 0644)
 	if err != nil {
+		panic("o noes")
 		logger.Fatalf("Can't open %s: %v", path, err)
 	}
 	reader := bufio.NewReader(file)

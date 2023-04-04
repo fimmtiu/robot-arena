@@ -69,6 +69,8 @@ func TestSimplifyScript(t *testing.T) {
 		"(= (+ 3 3) (+ 2 2))": "0\n",
 		"(not (+ 2 2))": "0\n",
 		"(not (- 2 2))": "1\n",
+		"(shoot (+ 2 2))": "(shoot 4)\n",
+
 
 		// Expressions that are not constant should not be simplified.
 		"(if (my-x-pos) (+ 2 2) (- 3 3))": "(if (my-x-pos)\n  4\n  0)\n",
@@ -81,12 +83,4 @@ func TestSimplifyScript(t *testing.T) {
 		SimplifyTree(code)
 		assert.Equal(t, after, FormatScript(code))
 	}
-}
-
-func TestCountExpressions(t *testing.T) {
-	foo := ParseScript("(if 1 2 3)")
-	bar := ParseScript("(if (and 1 2) 3 4)")
-
-	assert.Equal(t, 4, countExpressions(foo))
-	assert.Equal(t, 6, countExpressions(bar))
 }

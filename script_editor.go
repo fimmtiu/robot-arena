@@ -33,7 +33,7 @@ func RandomScript(minExprs int) string {
 
 func RandomTree(minExprs int) *ScriptNode {
 	script := makeRandomNode()
-	for countExpressions(script) < minExprs {
+	for script.Size() < minExprs {
 		script = wrapNode(script)
 	}
 	return script
@@ -56,19 +56,6 @@ func makeRandomNode() *ScriptNode {
 // https://www.desmos.com/calculator/onchb78rot
 func randomInt() int {
 	return int(math.Floor(0.00005 * math.Pow(rand.Float64() * 100, 3)))
-}
-
-// Counts the number of expressions in a ScriptNode tree.
-func countExpressions(node *ScriptNode) int {
-	if node.Type == Expr {
-		i := 0
-		for _, child := range node.Children {
-			i += countExpressions(child)
-		}
-		return i
-	} else {
-		return 1
-	}
 }
 
 // Wraps a node in some other multi-argument expression.
@@ -110,9 +97,9 @@ func SpliceScripts(scriptA, scriptB string) string {
 // Repeatedly picks a random large-ish branch in the tree and replaces it with something shorter until we get
 // below the limit.
 func randomlyPruneTree(tree *ScriptNode) {
-	for countExpressions(tree) > MAX_EXPRS_PER_SCRIPT {
+	for tree.Size() > MAX_EXPRS_PER_SCRIPT {
 		replacement := RandomTree(1)
-		replaceRandomNode(tree, replacement, countExpressions(replacement))
+		replaceRandomNode(tree, replacement, replacement.Size())
 	}
 }
 
@@ -149,7 +136,7 @@ func replaceRandomNode(tree, replacement *ScriptNode, minSize int) {
 	if minSize > 0 {
 		for {
 			randomLocation = chooseRandomLocation(tree)
-			if countExpressions(randomLocation.Node) >= minSize {
+			if randomLocation.Node.Size() >= minSize {
 				break
 			}
 		}
@@ -245,7 +232,7 @@ func SimplifyTree(tree *ScriptNode) {
 				if value == 0 {
 					branch = tree.Children[3]
 				}
-				replaceNode(tree, branch)
+				*tree = *branch
 			}
 		}
 	}
@@ -253,22 +240,15 @@ func SimplifyTree(tree *ScriptNode) {
 	// Fold constant values
 	isConstant, value := constantValue(tree)
 	if isConstant {
-		replaceNode(tree, &ScriptNode{Type: Int, N: value})
+		*tree = ScriptNode{Type: Int, N: value}
 	}
 
 	for i := 1; i < len(tree.Children); i++ {
 		isConstant, value := constantValue(tree.Children[i])
 		if isConstant {
-			replaceNode(tree.Children[i], &ScriptNode{Type: Int, N: value})
+			*tree.Children[i] = ScriptNode{Type: Int, N: value}
 		}
 	}
-}
-
-func replaceNode(dest, src *ScriptNode) {
-	dest.Children = src.Children
-	dest.Type = src.Type
-	dest.Func = src.Func
-	dest.N = src.N
 }
 
 func constantValue(node *ScriptNode) (bool, int) {

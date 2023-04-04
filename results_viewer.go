@@ -103,10 +103,10 @@ func (rv *ResultsViewer) WriteBestScores(gen *Generation) {
 	for i := 0; i < SCORES_PER_GENERATION; i++ {
 		io.WriteString(rv.Output, fmt.Sprintf(`
 			<tr>
-				<td><a href="gen_%d/scripts/%d.l">%d</td>
+				<td>%d (<a href="gen_%d/scripts/%d.l">original</a>, <a href="gen_%d/scripts/simple/%d.l">simplified</a>)</td>
 				<td>%.3f</td>
 			</tr>
-		`, gen.Id, scores[i].Id, scores[i].Id, scores[i].Score))
+		`, scores[i].Id, gen.Id, scores[i].Id, gen.Id, scores[i].Id, scores[i].Score))
 	}
 
 	io.WriteString(rv.Output, `

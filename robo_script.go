@@ -62,6 +62,19 @@ func ParseScript(code string) *ScriptNode {
 	return node
 }
 
+// Counts the number of expressions in a ScriptNode tree.
+func (node *ScriptNode) Size() int {
+	if node.Type == Expr {
+		i := 0
+		for _, child := range node.Children {
+			i += child.Size()
+		}
+		return i
+	} else {
+		return 1
+	}
+}
+
 // It's quick! It's dirty! It's a Lisp parser in ~60 lines!
 func readToken(code string) (*ScriptNode, string, error) {
 	var err error

@@ -156,15 +156,15 @@ func (gs *GameState) IsGameOver() bool {
 	}
 
 	if alive[TeamA] == 0 || alive[TeamB] == 0 { // One team is wiped out
-		logger.Printf("A team died: A %d, B %d", alive[TeamA], alive[TeamB])
+		// logger.Printf("A team died: A %d, B %d", alive[TeamA], alive[TeamB])
 		return true
 	}
 	if !gs.Goals[TeamA].Alive || !gs.Goals[TeamB].Alive { // A goal has been destroyed
-		logger.Printf("A goal died: A %v, B %v", gs.Goals[TeamA].Alive, gs.Goals[TeamB].Alive)
+		// logger.Printf("A goal died: A %v, B %v", gs.Goals[TeamA].Alive, gs.Goals[TeamB].Alive)
 		return true
 	}
 	if gs.Tick >= MAX_TICKS_PER_GAME { // The game has run over the max allowed time
-		logger.Printf("Game ran out of time.")
+		// logger.Printf("Game ran out of time.")
 		return true
 	}
 

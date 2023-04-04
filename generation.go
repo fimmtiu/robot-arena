@@ -39,7 +39,7 @@ func NewGeneration(scenario string, id int, arena *Arena) *Generation {
 	return &Generation{id, previous, fileManager, arena, nil, [][2]int{}}
 }
 
-func (g *Generation) Initialize(vis Visualizer) {
+	func (g *Generation) Initialize(vis Visualizer) {
 	g.Visualizer = vis
 
 	// Ensure that we have a minimum number of scripts in the scripts folder.
@@ -183,7 +183,7 @@ func (g *Generation) Run() {
 		match := NewMatch(g, matchId, scriptA, scriptB)
 		match.Run()
 
-		logger.Printf("Match %d: script %d: %d points, script %d: %d points", matchId, scriptA, match.Scores[TeamA], scriptB, match.Scores[TeamB])
+		logger.Printf("[Gen %d, match %d] script %d: %d points, script %d: %d points", g.Id, matchId, scriptA, match.Scores[TeamA], scriptB, match.Scores[TeamB])
 		g.FileManager.writeCellStatistics(match)
 		g.FileManager.writeMatchOutcome(match)
 	}

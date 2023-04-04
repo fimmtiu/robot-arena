@@ -93,7 +93,6 @@ func (m *Match) RunTick() bool {
 	}
 
 	if m.State.IsGameOver() {
-		// logger.Printf("Final score: Team A %d, Team B %d.", m.Scores[TeamA], m.Scores[TeamB])
 		m.Generation.Visualizer.Finish()
 		return true
 	}
@@ -139,19 +138,19 @@ func (m *Match) BotShoot(bot *Bot, action Action) {
 			targetBot.Alive = false
 			targetBot.Position.Kills++
 			if targetBot.Team == bot.Team {
-				logger.Printf("Friendly fire on team %d! Bot %d killed bot %d. (%d, %d)", bot.Team, bot.Id, targetBot.Id, targetBot.Position.X, targetBot.Position.Y)
+				// logger.Printf("Friendly fire on team %d! Bot %d killed bot %d. (%d, %d)", bot.Team, bot.Id, targetBot.Id, targetBot.Position.X, targetBot.Position.Y)
 				m.Scores[bot.Team] -= 2  // penalty for friendly fire
 			} else {
-				logger.Printf("Bot %d from team %d killed enemy bot %d", bot.Id, bot.Team, targetBot.Id)
+				// logger.Printf("Bot %d from team %d killed enemy bot %d", bot.Id, bot.Team, targetBot.Id)
 				m.Scores[bot.Team] += 1
 			}
 		} else if targetGoal != nil {
 			targetGoal.Alive = false
 			if targetGoal.Team == bot.Team {
-				logger.Printf("Own goal for team %d!", bot.Team)
+				// logger.Printf("Own goal for team %d!", bot.Team)
 				m.Scores[bot.Team] -= 20  // massive penalty for an own-goal
 			} else {
-				logger.Printf("Team %d destroyed the other team's goal", bot.Team)
+				// logger.Printf("Team %d destroyed the other team's goal", bot.Team)
 				m.Scores[bot.Team] += 10
 			}
 		}
