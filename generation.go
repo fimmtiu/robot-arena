@@ -183,7 +183,7 @@ func (g *Generation) Run() {
 		match := NewMatch(g, matchId, scriptA, scriptB)
 		match.Run()
 
-		logger.Printf("[Gen %d, match %d] script %d: %d points, script %d: %d points", g.Id, matchId, scriptA, match.Scores[TeamA], scriptB, match.Scores[TeamB])
+		// logger.Printf("[Gen %d, match %d] script %d: %d points, script %d: %d points", g.Id, matchId, scriptA, match.Scores[TeamA], scriptB, match.Scores[TeamB])
 		g.FileManager.writeCellStatistics(match)
 		g.FileManager.writeMatchOutcome(match)
 	}

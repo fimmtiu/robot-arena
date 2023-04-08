@@ -95,7 +95,7 @@ func (m *Match) RunTick() bool {
 
 	if m.State.IsGameOver() {
 		// If no bot on a team has moved during the match, penalize them 5 points.
-		for i := 0; i < 2; i++ {
+		for i := 0; i < len(m.Moved); i++ {
 			if !m.Moved[i] {
 				m.Scores[i] -= 5
 			}
