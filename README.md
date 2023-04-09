@@ -150,7 +150,8 @@ We'll also write machine-readable statistics to a couple of files after each mat
 
 ### Cell statistics
 
-After a match, we record per-cell statistics in a binary file called ``scenario/<name>/<gen>/cells`. For each cell, it records:
+After a match, we record per-cell statistics in a file called ``scenario/<name>/<gen>/cells.csv`. For each cell, it records:
+* The cell's coordinates
 * The number of times a robot moved into the cell
 * The number of times a robot shot while standing on the cell
 * The number of times a robot was killed on the cell

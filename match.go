@@ -54,7 +54,6 @@ var currentMatch *Match
 var turnSequence = []int{0, 5, 1, 6, 2, 7, 3, 8, 4, 9}  // Alternates bots from different teams
 
 func NewMatch(generation *Generation, id int, scriptId_A int, scriptId_B int) *Match {
-	generation.Arena.Reset()
 	rng := rand.New(rand.NewSource(int64(id)))
 	state := NewGameState(generation.Arena)
 	match := &Match{rng, state, generation, id,  scriptId_A, scriptId_B, [2]int{0, 0}, [2]bool{false, false}}

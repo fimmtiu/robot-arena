@@ -74,7 +74,7 @@ func GenerateHeatmaps(gen *Generation) []*Heatmap {
 	results[KillsMap] = NewHeatmap("kills", gen, color.RGBA{255, 0, 0, 255})   // red
 	results[WaitsMap] = NewHeatmap("waits", gen, color.RGBA{0, 255, 0, 255})   // green
 
-	gen.FileManager.EachCell(func (x, y, moves, shots, kills, waits int) {
+	gen.FileManager.EachCellRow(func (x, y, moves, shots, kills, waits int) {
 		for i := 0; i < moves; i++ {
 			results[MovesMap].AddEvent(x, y)
 		}

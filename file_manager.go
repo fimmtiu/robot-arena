@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"encoding/binary"
 	"errors"
 	"fmt"
 	"io"
@@ -136,65 +135,24 @@ func (fm *FileManager) LoadScript(state *GameState, id int) Script {
 // X,Y (1 byte each), then moves, shots, kills, waits at 4 bytes each. Actual size will be packed smaller.
 const MAX_BYTES_PER_CELL = 2 + 4 + 4 + 4 + 4
 
-func (fm *FileManager) RecordResults(match *Match) {
-	fm.writeCellStatistics(match)
-	fm.writeMatchOutcome(match)
-}
+func (fm *FileManager) WriteCellStatistics(arena *Arena) {
+	path := fmt.Sprintf("scenario/%s/gen_%d/cells.csv", fm.Scenario, fm.Generation)
+	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	if err != nil {
+		logger.Fatalf("Couldn't open %s for writing: %v", path, err)
+	}
+	defer file.Close()
 
-func (fm *FileManager) writeCellStatistics(match *Match) {
-	arena := match.State.Arena
-	path := fmt.Sprintf("scenario/%s/gen_%d/cells", fm.Scenario, fm.Generation)
-	buf := make([]byte, 0, arena.Width * arena.Height * MAX_BYTES_PER_CELL)
+	file.WriteString("x,y,moves,shots,kills,waits\n")
 
 	for _, cell := range arena.Cells {
-		if cell.Moves == 0 && cell.Shots == 0 && cell.Kills == 0 && cell.Waits == 0 {
-			continue
+		if cell.Moves > 0 || cell.Shots > 0 || cell.Kills > 0 || cell.Waits > 0 {
+			file.WriteString(fmt.Sprintf("%d,%d,%d,%d,%d,%d\n", cell.X, cell.Y, cell.Moves, cell.Shots, cell.Kills, cell.Waits))
 		}
-		buf = binary.AppendUvarint(buf, uint64(cell.X))
-		buf = binary.AppendUvarint(buf, uint64(cell.Y))
-		buf = binary.AppendUvarint(buf, uint64(cell.Moves))
-		buf = binary.AppendUvarint(buf, uint64(cell.Shots))
-		buf = binary.AppendUvarint(buf, uint64(cell.Kills))
-		buf = binary.AppendUvarint(buf, uint64(cell.Waits))
-	}
-
-	file, err := os.OpenFile(path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
-	if err != nil {
-		logger.Fatalf("Couldn't open %s for appending: %v", path, err)
-	}
-	written, err := file.Write(buf)
-	if err != nil {
-		logger.Fatalf("Couldn't write %d bytes to %s: %v", len(buf), path, err)
-	}
-	if written < len(buf) {
-		logger.Fatalf("Only wrote %d of %d bytes to %s!", written, len(buf), path)
 	}
 }
 
-func (fm *FileManager) EachCell(callback CellProcessor) {
-	path := fmt.Sprintf("scenario/%s/gen_%d/cells", fm.Scenario, fm.Generation)
-	var cell [6]uint64
-
-	file, err := os.Open(path)
-	if err != nil {
-		logger.Fatalf("Couldn't open %s for reading: %v", path, err)
-	}
-	reader := bufio.NewReader(file)
-
-	for {
-		for i := 0; i < 6; i++ {
-			cell[i], err = binary.ReadUvarint(reader)
-			if err == io.EOF {
-				return
-			} else if err != nil {
-				logger.Fatalf("Error while reading cells from %s: %v", path, err)
-			}
-		}
-		callback(int(cell[0]), int(cell[1]), int(cell[2]), int(cell[3]), int(cell[4]), int(cell[5]))
-	}
-}
-
-func (fm *FileManager) writeMatchOutcome(match *Match) {
+func (fm *FileManager) WriteMatchOutcome(match *Match) {
 	path := fmt.Sprintf("scenario/%s/gen_%d/results.csv", fm.Scenario, fm.Generation)
 
 	file, err := os.OpenFile(path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
@@ -218,6 +176,36 @@ func (fm *FileManager) writeMatchOutcome(match *Match) {
 
 func (fm *FileManager) EachResultRow(callback ResultProcessor) {
 	path := fmt.Sprintf("scenario/%s/gen_%d/results.csv", fm.Scenario, fm.Generation)
+	file, err := os.OpenFile(path, os.O_RDONLY, 0644)
+	if err != nil {
+		logger.Fatalf("Can't open %s: %v", path, err)
+	}
+	reader := bufio.NewReader(file)
+	_, err = reader.ReadString('\n')
+	if err != nil {
+		logger.Fatalf("Can't read first line from %s: %v", path, err)
+	}
+
+	for {
+		row, err := reader.ReadString('\n')
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			logger.Fatalf("Can't read line from %s: %v", path, err)
+		}
+		strColumns := strings.Split(strings.TrimSpace(row), ",")
+		columns := make([]int, len(strColumns))
+		for i, str := range strColumns {
+			columns[i] = strToInt(str)
+		}
+		callback(columns[0], columns[1], columns[2], columns[3], columns[4], columns[5])
+	}
+
+	file.Close()
+}
+
+func (fm *FileManager) EachCellRow(callback CellProcessor) {
+	path := fmt.Sprintf("scenario/%s/gen_%d/cells.csv", fm.Scenario, fm.Generation)
 	file, err := os.OpenFile(path, os.O_RDONLY, 0644)
 	if err != nil {
 		logger.Fatalf("Can't open %s: %v", path, err)

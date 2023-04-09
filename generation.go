@@ -175,6 +175,8 @@ func (g *Generation) BestScoreIds() []int {
 }
 
 func (g *Generation) Run() {
+	g.Arena.Reset()
+
 	for matchId := 0; ; matchId++ {
 		done, scriptA, scriptB := g.pickTwoScripts()
 		if done {
@@ -184,9 +186,9 @@ func (g *Generation) Run() {
 		match.Run()
 
 		// logger.Printf("[Gen %d, match %d] script %d: %d points, script %d: %d points", g.Id, matchId, scriptA, match.Scores[TeamA], scriptB, match.Scores[TeamB])
-		g.FileManager.writeCellStatistics(match)
-		g.FileManager.writeMatchOutcome(match)
+		g.FileManager.WriteMatchOutcome(match)
 	}
+	g.FileManager.WriteCellStatistics(g.Arena)
 }
 
 // Find two scripts that haven't yet played each other and return their IDs.
